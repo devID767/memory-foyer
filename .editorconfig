@@ -1,0 +1,73 @@
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# C#
+[*.cs]
+# Naming: private fields _camelCase
+dotnet_naming_rule.private_fields_should_be_camel_case.severity = suggestion
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style = camel_case_underscore_style
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.camel_case_underscore_style.required_prefix = _
+dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+
+# Braces: Allman style
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:suggestion
+
+# var usage
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# ── Unity Analyzers (Microsoft.Unity.Analyzers via vstuc) ──
+dotnet_diagnostic.UNT0001.severity = warning    # Empty Unity message
+dotnet_diagnostic.UNT0002.severity = warning    # Inefficient tag comparison — use CompareTag
+dotnet_diagnostic.UNT0003.severity = warning    # Use generic GetComponent<T>
+dotnet_diagnostic.UNT0004.severity = warning    # Don't use Time.fixedDeltaTime in Update
+dotnet_diagnostic.UNT0006.severity = warning    # Incorrect Unity message signature
+dotnet_diagnostic.UNT0007.severity = warning    # Null coalescing on Unity objects
+dotnet_diagnostic.UNT0008.severity = warning    # Null propagation on Unity objects
+dotnet_diagnostic.UNT0010.severity = warning    # Don't use new on MonoBehaviour
+dotnet_diagnostic.UNT0011.severity = warning    # Don't use new on ScriptableObject
+dotnet_diagnostic.UNT0012.severity = warning    # Unused coroutine return value
+dotnet_diagnostic.UNT0018.severity = warning    # Reflection in performance-critical methods
+dotnet_diagnostic.UNT0019.severity = suggestion # gameObject.gameObject indirection
+dotnet_diagnostic.UNT0022.severity = suggestion # Inefficient position/rotation setting
+dotnet_diagnostic.UNT0023.severity = warning    # Coalescing assignment on Unity objects
+dotnet_diagnostic.UNT0024.severity = suggestion # Scalar before vector math
+dotnet_diagnostic.UNT0028.severity = suggestion # Use non-allocating physics APIs
+dotnet_diagnostic.UNT0029.severity = warning    # Pattern matching null on Unity objects
+dotnet_diagnostic.UNT0030.severity = error      # Don't Destroy a Transform
+
+# ── Suppress false positives for Unity ──
+dotnet_diagnostic.IDE0051.severity = none        # Unity calls Start/Update via reflection
+dotnet_diagnostic.IDE0052.severity = none        # [SerializeField] fields read by Unity
+dotnet_diagnostic.CA1822.severity = none         # False positive on Unity messages
+
+# ── Useful IDE rules ──
+dotnet_diagnostic.IDE0004.severity = warning    # Unnecessary cast
+dotnet_diagnostic.IDE0040.severity = warning    # Add accessibility modifiers
+dotnet_diagnostic.IDE0044.severity = suggestion # Make field readonly
+dotnet_diagnostic.IDE0049.severity = suggestion # Use language keywords (int vs Int32)
+dotnet_diagnostic.IDE0055.severity = warning    # Formatting rule
+dotnet_diagnostic.IDE0060.severity = suggestion # Remove unused parameter
+
+# Shader files: tabs
+[*.{shader,cginc,hlsl,compute}]
+indent_style = tab
+
+# JSON / YAML / XML
+[*.{json,yml,yaml,xml,asmdef,asmref,inputactions}]
+indent_size = 2
