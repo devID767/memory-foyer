@@ -4,9 +4,9 @@ High-level project phases, mirroring the execution plan in `memory-foyer-plan.md
 
 ## Phase 0: Project scaffolding [CURRENT]
 
-- [ ] **0.1** Create GitHub repo & local structure
+- [x] **0.1** Create GitHub repo & local structure _(done — repo initialized, structure in place)_
 - [x] **0.2** Create Unity 6 URP project _(done in commit 0d89b19)_
-- [ ] **0.3** Install Unity packages (VContainer, UniTask, MessagePipe, DOTween, Cinemachine)
+- [x] **0.3** Install Unity packages (VContainer, UniTask, MessagePipe, DOTween, Cinemachine) _(+ MessagePipe.VContainer integration)_
 - [ ] **0.4** Create folder structure & assembly definitions for the five layers
 - [ ] **0.5** Wire up Node.js Express server skeleton _(done — endpoints come in Phase 3.5)_
 - [ ] **0.6** README skeleton at repo root
