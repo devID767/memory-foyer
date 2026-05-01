@@ -57,6 +57,7 @@ MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and bro
 - **Models are immutable records.** `Card`, `Deck`, `Sm2State` are `record` (or `readonly record struct` for IDs). Repositories hold mutable references; updates use `with`-expressions.
 - **DTOs live in Infrastructure.** Mapping between Domain types and DTOs (`SessionResultDto`, `DeckStatsDto`) happens in `Infrastructure/Dtos/Mappers.cs`. Domain doesn't know about JSON.
 - **Composition guards reentrancy.** `IReviewSessionService.StartAsync` throws `InvalidOperationException` if state is not `Idle` — protects against double-clicks on a pedestal.
+- **Strict nullable is per asmdef.** Each asmdef we own ships with a co-located `csc.rsp` enabling `-nullable:enable -warnaserror+:nullable`. The project-level `Assets/csc.rsp` is intentionally empty (Unity passes every line of it as a compiler argument and has no comment syntax — keep it zero bytes) so `Assembly-CSharp-firstpass` (third-party code under `Assets/Plugins/`) compiles with defaults. Adding a new asmdef without its `csc.rsp` means losing the third architectural enforcement (alongside layer separation and the `IClock`/`IRandomProvider` indirection).
 
 ## What this architecture is *not*
 
