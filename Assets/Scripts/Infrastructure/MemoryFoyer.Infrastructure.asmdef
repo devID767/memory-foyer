@@ -1,0 +1,19 @@
+{
+    "name": "MemoryFoyer.Infrastructure",
+    "rootNamespace": "MemoryFoyer.Infrastructure",
+    "references": [
+        "MemoryFoyer.Application",
+        "MemoryFoyer.Domain",
+        "UniTask",
+        "MessagePipe"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

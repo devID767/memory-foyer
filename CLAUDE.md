@@ -3,6 +3,8 @@
 ## Project Overview
 Spaced-repetition trainer (SM-2) with a minimal 3D foyer for deck selection. Built as a portfolio project to demonstrate strict layered architecture in Unity 6.
 
+Design scope and mechanics: see [docs/GDD.md](docs/GDD.md).
+
 ## Tech Stack
 
 - **Unity:** 6000.4.1f1 (Unity 6 LTS)
@@ -31,6 +33,7 @@ Single file, no build step. Run with `cd server && node server.js`.
 .vscode/                # Unity-owned VS Code config (cherry-picked extras)
 docs/                   # All project documentation
   architecture.md       # Layered architecture reference
+  GDD.md                # Game design document — scope, mechanics, SM-2 rules
   Backlog.md            # Workflow: bugs / todos / ideas (managed via /backlog skills)
   Roadmap.md            # Workflow: project phases (managed via /roadmap skills)
 server/                 # Node.js + Express mock backend

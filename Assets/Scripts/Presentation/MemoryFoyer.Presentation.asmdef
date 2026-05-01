@@ -1,0 +1,23 @@
+{
+    "name": "MemoryFoyer.Presentation",
+    "rootNamespace": "MemoryFoyer.Presentation",
+    "references": [
+        "MemoryFoyer.Application",
+        "MemoryFoyer.Domain",
+        "UniTask",
+        "MessagePipe",
+        "Unity.TextMeshPro",
+        "Unity.Cinemachine",
+        "VContainer",
+        "MessagePipe.VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

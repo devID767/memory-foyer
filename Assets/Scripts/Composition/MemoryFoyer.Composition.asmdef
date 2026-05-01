@@ -1,0 +1,23 @@
+{
+    "name": "MemoryFoyer.Composition",
+    "rootNamespace": "MemoryFoyer.Composition",
+    "references": [
+        "MemoryFoyer.Application",
+        "MemoryFoyer.Domain",
+        "MemoryFoyer.Infrastructure",
+        "MemoryFoyer.Presentation",
+        "UniTask",
+        "MessagePipe",
+        "VContainer",
+        "MessagePipe.VContainer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
