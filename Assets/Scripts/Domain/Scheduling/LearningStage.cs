@@ -4,6 +4,7 @@ namespace MemoryFoyer.Domain.Scheduling
     {
         New,
         Learning,
-        Review
+        Review,
+        Relearning,
     }
 }

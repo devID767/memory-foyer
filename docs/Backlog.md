@@ -6,7 +6,6 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 
 ## Todo
 <!-- next ID: T-1 -->
-- [ ] **T-0** _(example, delete me)_ Set up first system
 
 ## Bugs
 <!-- next ID: B-1 -->
@@ -15,3 +14,5 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 <!-- next ID: I-1 -->
 
 ## Archive
+
+- [x] **T-0** (2026-05-02 → 2026-05-02) Set up first system

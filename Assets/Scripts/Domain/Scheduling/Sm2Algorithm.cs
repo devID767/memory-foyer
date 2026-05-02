@@ -11,6 +11,7 @@ namespace MemoryFoyer.Domain.Scheduling
             {
                 case LearningStage.New:
                 case LearningStage.Learning:
+                case LearningStage.Relearning:
                     return ScheduleLearning(state, grade, reviewedAt);
 
                 case LearningStage.Review:
@@ -23,6 +24,10 @@ namespace MemoryFoyer.Domain.Scheduling
 
         private static Sm2State ScheduleLearning(Sm2State state, ReviewGrade grade, DateTime reviewedAt)
         {
+            LearningStage nextStage = state.Stage == LearningStage.Relearning
+                ? LearningStage.Relearning
+                : LearningStage.Learning;
+
             switch (state.LearningStepIndex)
             {
                 case 0:
@@ -31,7 +36,7 @@ namespace MemoryFoyer.Domain.Scheduling
                         case ReviewGrade.Again:
                             return state with
                             {
-                                Stage = LearningStage.Learning,
+                                Stage = nextStage,
                                 LearningStepIndex = 0,
                                 DueAt = reviewedAt + TimeSpan.FromMinutes(10),
                             };
@@ -40,7 +45,7 @@ namespace MemoryFoyer.Domain.Scheduling
                         case ReviewGrade.Good:
                             return state with
                             {
-                                Stage = LearningStage.Learning,
+                                Stage = nextStage,
                                 LearningStepIndex = 1,
                                 DueAt = reviewedAt + TimeSpan.FromMinutes(10),
                             };
@@ -58,7 +63,7 @@ namespace MemoryFoyer.Domain.Scheduling
                         case ReviewGrade.Again:
                             return state with
                             {
-                                Stage = LearningStage.Learning,
+                                Stage = nextStage,
                                 LearningStepIndex = 0,
                                 DueAt = reviewedAt + TimeSpan.FromMinutes(10),
                             };
@@ -81,10 +86,12 @@ namespace MemoryFoyer.Domain.Scheduling
 
         private static Sm2State Graduate(Sm2State state, int intervalDays, DateTime reviewedAt)
         {
+            int repetitions = state.Stage == LearningStage.Relearning ? state.Repetitions : 1;
+
             return state with
             {
                 Stage = LearningStage.Review,
-                Repetitions = 1,
+                Repetitions = repetitions,
                 IntervalDays = intervalDays,
                 DueAt = reviewedAt + TimeSpan.FromDays(intervalDays),
                 LearningStepIndex = 0,
@@ -96,44 +103,45 @@ namespace MemoryFoyer.Domain.Scheduling
             switch (grade)
             {
                 case ReviewGrade.Again:
-                {
-                    // AwayFromZero matches server-side Math.round (item 3.5.4)
-                    int newInterval = Math.Min(365, Math.Max(1, (int)Math.Round(state.IntervalDays * 0.5, MidpointRounding.AwayFromZero)));
-                    double newEf = Math.Max(1.3, state.EaseFactor - 0.20);
-                    return state with
                     {
-                        EaseFactor = newEf,
-                        IntervalDays = newInterval,
-                        Stage = LearningStage.Learning,
-                        LearningStepIndex = 0,
-                        DueAt = reviewedAt + TimeSpan.FromMinutes(10),
-                    };
-                }
+                        // AwayFromZero matches server-side Math.round (item 3.5.4)
+                        int newInterval = (int)Math.Round(state.IntervalDays * 0.5, MidpointRounding.AwayFromZero);
+                        int newIntervalClamped = Math.Clamp(newInterval, 1, 365);
+                        double newEf = Math.Max(1.3, state.EaseFactor - 0.20);
+                        return state with
+                        {
+                            EaseFactor = newEf,
+                            IntervalDays = newIntervalClamped,
+                            Stage = LearningStage.Relearning,
+                            LearningStepIndex = 0,
+                            DueAt = reviewedAt + TimeSpan.FromMinutes(10),
+                        };
+                    }
 
                 case ReviewGrade.Hard:
                 case ReviewGrade.Good:
                 case ReviewGrade.Easy:
-                {
-                    int newReps = state.Repetitions + 1;
-                    int rawInterval = newReps switch
                     {
-                        1 => 1,
-                        2 => 6,
-                        _ => (int)Math.Round(state.IntervalDays * state.EaseFactor, MidpointRounding.AwayFromZero),
-                    };
-                    int newInterval = Math.Min(365, Math.Max(1, rawInterval));
-                    int g = (int)grade;
-                    double newEf = Math.Max(1.3, state.EaseFactor + (0.1 - (5 - g) * (0.08 + (5 - g) * 0.02)));
-                    return state with
-                    {
-                        Repetitions = newReps,
-                        EaseFactor = newEf,
-                        IntervalDays = newInterval,
-                        Stage = LearningStage.Review,
-                        LearningStepIndex = 0,
-                        DueAt = reviewedAt + TimeSpan.FromDays(newInterval),
-                    };
-                }
+                        int newReps = state.Repetitions + 1;
+                        int rawInterval = newReps switch
+                        {
+                            1 => 1,
+                            2 => 6,
+                            _ => (int)Math.Round(state.IntervalDays * state.EaseFactor, MidpointRounding.AwayFromZero),
+                        };
+                        int newInterval = Math.Clamp(rawInterval, 1, 365);
+                        int g = (int)grade;
+                        double newEf = Math.Max(1.3, state.EaseFactor + (0.1 - (5 - g) * (0.08 + (5 - g) * 0.02)));
+                        return state with
+                        {
+                            Repetitions = newReps,
+                            EaseFactor = newEf,
+                            IntervalDays = newInterval,
+                            Stage = LearningStage.Review,
+                            LearningStepIndex = 0,
+                            DueAt = reviewedAt + TimeSpan.FromDays(newInterval),
+                        };
+                    }
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(grade), grade, null);

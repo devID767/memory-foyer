@@ -1,7 +1,7 @@
 {
     "name": "MemoryFoyer.Tests.EditMode",
     "rootNamespace": "MemoryFoyer.Tests.EditMode",
-    "references": [],
+    "references": ["MemoryFoyer.Domain"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

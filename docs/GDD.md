@@ -60,8 +60,8 @@ The same algorithm is ported to `server/sm2.js` (§8). The server is authoritati
 - `EaseFactor` (float, ≥ 1.3)
 - `IntervalDays` (int, 0–365)
 - `DueAt` (UTC)
-- `LearningStage` (enum: `New`, `Learning`, `Review`)
-- `LearningStepIndex` (int, used only when stage is `Learning`)
+- `LearningStage` (enum: `New`, `Learning`, `Review`, `Relearning`)
+- `LearningStepIndex` (int, used only when stage is `Learning` or `Relearning`)
 
 **New card initial state:** `Stage=New`, `Reps=0`, `EF=2.5`, `Interval=0`, `DueAt=now`.
 
@@ -74,16 +74,23 @@ The same algorithm is ported to `server/sm2.js` (§8). The server is authoritati
 | Good | 3 | 4 | Recalled correctly |
 | Easy | 4 | 5 | Trivial |
 
-### 4.3 Learning Stage (new + lapsed cards)
+### 4.3 Learning / Relearning Stage
 
-Two steps before a card enters `Review` long-term schedule:
+Both `Learning` (new card onboarding) and `Relearning` (post-lapse recovery) use the same two-step queue and the same transition table:
 
 | Step | Interval after Good/Easy | On Again |
 |---|---|---|
 | 0 | 10 minutes → step 1 | Stay at step 0, reschedule +10 min |
-| 1 | 1 day → graduate to `Review` (Interval=1, Reps=1) | Drop to step 0 |
+| 1 | 1 day → graduate to `Review` | Drop to step 0 |
 
-Easy on any learning step graduates to `Review` immediately with `Interval=4, Reps=1`.
+Easy on any step graduates to `Review` immediately with `Interval=4`.
+
+The two stages differ only at the moment of graduation:
+
+- **From `Learning` (or `New`)**: graduate sets `Repetitions = 1`. The card is treated as freshly learned.
+- **From `Relearning`**: graduate **preserves** the pre-lapse `Repetitions`. The card resumes its prior progression but with a fresh short interval (1 day for Hard/Good, 4 days for Easy).
+
+`EaseFactor` is never modified inside the learning/relearning queue itself — only on entry from `Review` (see §4.4 Again branch) and on each `Review`-stage grade.
 
 ### 4.4 Review Stage (graduated cards)
 
@@ -100,8 +107,10 @@ Easy on any learning step graduates to `Review` immediately with `Interval=4, Re
 - `IntervalDays := max(1, round(previousInterval × 0.5))`, clamped to ≤ 365
 - `EaseFactor := max(1.3, EaseFactor − 0.20)`
 - `Repetitions` is **not** reset
-- `Stage := Learning`, `LearningStepIndex := 0` — card re-enters learning queue
+- `Stage := Relearning`, `LearningStepIndex := 0` — card enters the relearning queue
 - `DueAt := reviewedAt + 10 minutes`
+
+After working through the relearning queue (per §4.3), the card graduates back to `Review` with its pre-lapse `Repetitions` intact — the soft lapse penalises only `EaseFactor` and the upcoming interval, not the long-term progression counter.
 
 ### 4.5 Determinism
 
