@@ -2,6 +2,7 @@
 name: idea
 model: haiku
 description: Add an idea/improvement to Backlog.md (Ideas section)
+effort: low
 argument-hint: "[idea description]"
 allowed-tools: Read, Edit, Write
 ---

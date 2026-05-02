@@ -2,6 +2,7 @@
 name: roadmap-next
 model: haiku
 description: Move the "current phase" marker in roadmap to the next phase
+effort: low
 allowed-tools: Read, Edit
 ---
 

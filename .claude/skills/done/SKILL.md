@@ -2,6 +2,7 @@
 name: done
 model: haiku
 description: Mark a backlog item as completed (moves to Archive)
+effort: low
 argument-hint: "<ID or keyword from the description>"
 allowed-tools: Read, Edit
 ---

@@ -3,6 +3,7 @@ name: architect
 description: Plans code architecture — file structure, interfaces, DI registrations, system design. Use when you need to plan HOW to implement a feature before writing code.
 tools: Read, Grep, Glob
 model: opus
+effort: high
 maxTurns: 15
 ---
 

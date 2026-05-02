@@ -3,6 +3,7 @@ name: gameplay-programmer
 description: Implements features by writing C# code according to specs from architect or user. Use when you need code written for a planned feature.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
+effort: medium
 maxTurns: 20
 ---
 

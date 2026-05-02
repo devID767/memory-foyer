@@ -1,6 +1,7 @@
 ---
 name: dev-story
 description: Full development cycle — reads spec, plans architecture, writes code, runs tests
+effort: high
 argument-hint: "<feature description>"
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Agent, mcp__mcp-unity__recompile_scripts, mcp__mcp-unity__get_console_logs
 ---

@@ -2,6 +2,7 @@
 name: check-unity
 model: sonnet
 description: Check Unity console for errors and warnings via MCP
+effort: low
 argument-hint: "[recompile | tests | all]"
 allowed-tools: Read, Grep, Glob, mcp__mcp-unity__get_console_logs, mcp__mcp-unity__recompile_scripts, mcp__mcp-unity__run_tests
 ---

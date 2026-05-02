@@ -2,6 +2,7 @@
 name: commit
 model: sonnet
 description: Analyzes changes, writes commit message in Conventional Commits style, and commits. Suggests splitting if too many unrelated changes.
+effort: low
 argument-hint: "[optional context hint for the commit message]"
 allowed-tools: Bash
 ---

@@ -2,6 +2,7 @@
 name: haiku
 model: haiku
 description: Quick request handled by Haiku — lookups, searches, small edits
+effort: low
 argument-hint: "<query>"
 allowed-tools: Read, Grep, Glob, Edit, Write
 ---

@@ -2,6 +2,7 @@
 name: roadmap-done
 model: haiku
 description: Mark a roadmap item as completed (in-place, no move)
+effort: low
 argument-hint: "<ID like M1.2 or a keyword from the description>"
 allowed-tools: Read, Edit
 ---

@@ -2,6 +2,7 @@
 name: roadmap
 model: haiku
 description: Show the current roadmap phase and the next 3 open items in it
+effort: low
 allowed-tools: Read
 ---
 

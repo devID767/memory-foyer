@@ -2,6 +2,7 @@
 name: story-done
 model: sonnet
 description: Checklist after agent/dev-story work — verifies everything is complete
+effort: medium
 argument-hint: "[system or feature name]"
 allowed-tools: Read, Grep, Glob, Bash
 agent: qa

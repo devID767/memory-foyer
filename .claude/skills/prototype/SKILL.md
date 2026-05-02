@@ -1,6 +1,7 @@
 ---
 name: prototype
 description: Quick throwaway prototype to test game feel — ignores architecture standards
+effort: medium
 argument-hint: "<what to prototype>"
 allowed-tools: Read, Grep, Glob, Write, Edit
 ---

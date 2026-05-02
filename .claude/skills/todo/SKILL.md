@@ -2,6 +2,7 @@
 name: todo
 model: haiku
 description: Add a planned task to Backlog.md (Todo section)
+effort: low
 argument-hint: "[task description]"
 allowed-tools: Read, Edit, Write
 ---

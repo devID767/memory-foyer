@@ -2,6 +2,7 @@
 name: smoke-check
 model: sonnet
 description: Quick check after manual code changes — conventions, compilation, common issues
+effort: medium
 argument-hint: "[file path or 'all' for recent changes]"
 allowed-tools: Read, Grep, Glob, Bash
 agent: qa

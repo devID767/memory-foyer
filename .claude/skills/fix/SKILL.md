@@ -1,6 +1,7 @@
 ---
 name: fix
 description: Structured bug investigation and fix — reads logs, finds root cause, fixes, verifies
+effort: high
 argument-hint: "<bug description or error message>"
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, mcp__mcp-unity__get_console_logs, mcp__mcp-unity__recompile_scripts
 ---

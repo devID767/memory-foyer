@@ -2,6 +2,7 @@
 name: sonnet
 model: sonnet
 description: Mid-complexity request on Sonnet — analysis, explanations, code edits
+effort: medium
 argument-hint: "<query>"
 allowed-tools: Read, Grep, Glob, Bash, Edit, Write
 ---

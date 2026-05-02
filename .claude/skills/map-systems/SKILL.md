@@ -1,6 +1,7 @@
 ---
 name: map-systems
 description: Visualizes dependencies between systems
+effort: medium
 allowed-tools: Read, Grep, Glob
 agent: architect
 ---

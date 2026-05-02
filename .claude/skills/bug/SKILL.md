@@ -2,6 +2,7 @@
 name: bug
 model: haiku
 description: Add a bug entry to Backlog.md (Bugs section)
+effort: low
 argument-hint: "[bug description]"
 allowed-tools: Read, Edit, Write
 ---

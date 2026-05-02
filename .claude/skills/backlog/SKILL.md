@@ -2,6 +2,7 @@
 name: backlog
 model: haiku
 description: Show a summary of Backlog.md — counts and recent items by section
+effort: low
 allowed-tools: Read
 ---
 

@@ -3,6 +3,7 @@ name: qa
 description: Reviews code for convention compliance, finds hardcoded values, and writes unit tests. Use after writing code or when you need tests.
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
+effort: medium
 maxTurns: 15
 ---
 

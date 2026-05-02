@@ -1,6 +1,7 @@
 ---
 name: refactor
 description: Promotes prototype code to production quality — adds architecture, configs, tests
+effort: high
 argument-hint: "<path to prototype file or system name>"
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Agent, mcp__mcp-unity__recompile_scripts, mcp__mcp-unity__get_console_logs
 ---
