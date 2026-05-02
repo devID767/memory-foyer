@@ -26,7 +26,7 @@ Single pass to align GDD / architecture.md / Roadmap.md / CLAUDE.md after the pe
 
 Tag: `v0.0.7-docs`.
 
-## Phase 1: Domain layer & SM-2 algorithm [CURRENT]
+## Phase 1: Domain layer & SM-2 algorithm
 
 - [x] **1.1** `Card`, `Deck` models + `CardId`, `DeckId` record structs _(2026-05-01)_
 - [x] **1.2** `ReviewGrade` enum (Again=0, Hard=3, Good=4, Easy=5) _(2026-05-01)_
@@ -40,7 +40,7 @@ Tag: `v0.0.7-docs`.
 
 Tag: `v0.1-domain`.
 
-## Phase 2: Application layer
+## Phase 2: Application layer [CURRENT]
 
 - [ ] **2.1** `IDeckRepository` interface
 - [ ] **2.2** `IScheduleStore` interface + `SessionResult` / `CardReview` records (`Application/Persistence/`)
