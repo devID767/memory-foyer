@@ -43,7 +43,7 @@ For each due card:
 Session ends (queue empty or Esc)
   ↓
 SessionResultDto POSTed with sessionId; results upload (or queue if offline)
-Backdrop returns; deck buttons refresh stats from /decks/:id/stats
+Backdrop returns; deck buttons refresh counts from GET /decks
   ↓
 Player picks another deck or quits
 ```
@@ -51,6 +51,8 @@ Player picks another deck or quits
 ## 4. Mechanics — Modified SM-2
 
 The algorithm lives in `Domain/Scheduling/Sm2Algorithm.cs`. **Pure C#, zero `UnityEngine` references, fully unit-tested.**
+
+The same algorithm is ported to `server/sm2.js` (§8). The server is authoritative — its result is the source of truth that overwrites client cache after every `POST /sessions`. The client copy exists for two reasons: (1) instant UI preview of the next interval after a grade without waiting for round-trip, (2) graceful degradation in offline sessions where pending grades are queued locally. Divergence between the two implementations is a bug; both are tested against the same fixture cases.
 
 ### 4.1 Card State
 
@@ -107,13 +109,24 @@ Easy on any learning step graduates to `Review` immediately with `Interval=4, Re
 - The algorithm is a pure function: `(CardState, Grade, Now) → CardState`. No randomness — session ordering also deterministic (oldest `DueAt` first, ties broken by stable `cardId`).
 - All operations are unit-tested across ~25 cases including learning, graduation, lapse-from-long-interval, EF floor, interval cap.
 
+### 4.6 Input validation (preconditions)
+
+`Sm2Algorithm.Schedule(state, grade, now)` trusts its inputs. Validation is the caller's responsibility — typically `ReviewSessionService` (which only ever produces valid `ReviewGrade` enum values) on the client and `zod` schemas on the server. Specifically:
+
+- `grade` is the `ReviewGrade` enum on the client; the server validates the integer is in `{0, 3, 4, 5}` and rejects with `400` otherwise.
+- `state.EaseFactor` is assumed `≥ 1.3` (the algorithm clamps after each update; a corrupted store would only ever drift upward, not below the floor — a pre-existing `< 1.3` value is silently clamped to `1.3` on next read).
+- `now` may be `< state.DueAt` (early review). The algorithm treats it as a normal review and recomputes from `now`, not from `DueAt`.
+- `state.Repetitions ≥ 0`, `state.IntervalDays ∈ [0, 365]` are invariants — never explicitly checked. Bug if violated.
+
 ## 5. Session Rules
 
 - A session pulls cards from the chosen deck where `DueAt ≤ now`, in deterministic order: oldest `DueAt` first, ties broken by stable card id.
-- **New-card budget:** at most `NewCardsPerDay` (default 10, per-deck) cards with `Stage == New` enter today's queue. The rest stay hidden.
-- A card graded **Again** is re-queued at the end of the **current session** in addition to its scheduled `DueAt`. If the player grades it Again twice in one session, the second grading still applies SM-2 and re-queues — there is no per-session cap.
+- **All times are UTC.** "Today" means UTC midnight-to-midnight (`[00:00Z, 24:00Z)`). The client never translates to local time for scheduling — only for display labels in non-functional copy.
+- **New-card budget:** at most `NewCardsPerDay` (default 10, per-deck) cards with `Stage == New` enter today's queue. The rest stay hidden until the next UTC midnight. The counter is server-side: `GET /decks/:id/schedule` returns at most `NewCardsPerDay` `Stage=New` cards per UTC day; the client trusts that filter and does not re-cap. (Cached schedules during long offline reuse the server's last filter — they may be slightly stale but never over-budget.)
+- A card graded **Again** is re-queued at the **physical end of the current in-memory queue** in addition to its scheduled `DueAt`. Concretely: after the current grade is recorded, if the queue is `[c2, c3]` and we just graded `c1` as Again, the queue becomes `[c2, c3, c1]`. If `c1` is graded Again again, it goes to the end once more; SM-2 is applied each time. There is no per-session cap.
 - Session ends when the queue is empty or the player presses Esc.
-- On end, a `SessionResultDto` is sent: `{ sessionId, deckId, reviews: [{ cardId, grade, reviewedAt }, ...] }`. `sessionId` is a client-generated GUID set when the session starts. The server uses it to dedup retries.
+- On end, a `SessionResultDto` is sent: `{ sessionId, deckId, reviews: [{ cardId, grade, reviewedAt }, ...] }`. `sessionId` is a client-generated GUID set when the session starts. The server uses it to dedup retries (see §8 idempotency).
+- **Persistence timing:** the in-memory list of completed reviews is appended to a pending-uploads file (`JsonFileScheduleCache`) atomically (temp file + rename) **after every grade**. So a process crash mid-session loses at most the last grade. On `EndAsync` the pending session is uploaded; on success it is removed from the file.
 - **Quit mid-session:** results so far are uploaded silently — no confirm dialog, no "discard" path.
 
 ## 6. Scenes & UI
@@ -133,7 +146,7 @@ A `Canvas` (Screen Space – Overlay) in front of the rendered backdrop:
 - Title: "Memory Foyer".
 - Three deck buttons stacked vertically. Each button: deck name + "N due / M total".
 - Empty deck (`due == 0`): button is disabled, sub-label reads **"All caught up"**.
-- Offline indicator: thin top banner "Server offline — stats may be stale" when last `/decks/:id/stats` call failed.
+- Offline indicator: thin top banner "Server offline — stats may be stale" when the last `GET /decks` (or any subsequent `IScheduleStore` call) failed.
 
 ### 6.3 Review Overlay (2D, dims foyer behind)
 
@@ -174,17 +187,33 @@ Node.js + Express in `server/`. SQLite (`better-sqlite3`) is the system of recor
 
 - **Storage:** SQLite file `server/data.sqlite`. Schema in `server/schema.sql` (decks, cards, card_schedules, processed_sessions, review_log). Initialized on first start; corrupt-file recovery — log warning, start fresh.
 - **Server-side SM-2:** `server/sm2.js` ports the algorithm from §4. The server is authoritative — it applies SM-2 on `POST /sessions` and the response carries the updated schedule.
-- **Validation:** `zod` schemas on every endpoint. Bad input → `400 { error, details }`.
-- **Idempotency:** `processed_sessions.session_id` is `UNIQUE`. A repeat `POST /sessions` with the same `sessionId` returns `200 { ok: true, dedup: true, updatedSchedule }` without mutating.
+- **Validation:** `zod` schemas on every endpoint. Bad input → `400 { error: string, details: zodIssue[] }` where `zodIssue[]` is the `error.issues` array from `zod` (each item: `{ path, message, code }`).
+- **Idempotency:** `processed_sessions.session_id` is `UNIQUE` and the row also stores a `payload_hash` (sha-256 of normalized `reviews`).
+  - First `POST /sessions` with a new `sessionId` → `200 { ok: true, updatedSchedule }`, hash stored.
+  - Repeat with same `sessionId` and same `payload_hash` → `200 { ok: true, dedup: true, updatedSchedule }` returning the **snapshot stored at first processing time** (no recomputation).
+  - Repeat with same `sessionId` but **different** `payload_hash` → `409 { error: 'session-payload-mismatch', sessionId }`. The client treats this as a logic error (it never edits a session after start).
 - **API contract:** `server/openapi.yaml` (OpenAPI 3.1).
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness probe — `{ status: 'ok', version }` |
 | GET | `/decks` | List decks with aggregated counts — `[{ deckId, displayName, dueCount, newCount, totalCount }]` |
-| GET | `/decks/:id/schedule` | Full per-card schedule — `{ deckId, cards: [{ cardId, reps, easeFactor, intervalDays, dueAt, stage, learningStep }] }` |
+| GET | `/decks/:id/schedule` | Full per-card schedule — `{ deckId, cards: [{ cardId, reps, easeFactor, intervalDays, dueAt, stage, learningStep }] }` (see DTO mapping below) |
 | POST | `/sessions` | Accepts `{ sessionId, deckId, reviews }`; runs server-side SM-2; returns `{ ok: true, dedup?: bool, updatedSchedule }` |
 | GET | `/sessions/:id` | Fetch a previously processed session — `{ sessionId, deckId, processedAt, reviews }` |
+
+**`updatedSchedule` shape:** identical to `GET /decks/:id/schedule` body — `{ deckId, cards: [...] }` — and contains the **full deck**, not just the cards touched by this session. This lets the client overwrite its cache atomically without merge logic.
+
+**Domain ↔ DTO field mapping** (lives in `Infrastructure/Dtos/ScheduleMappers.cs`):
+
+| Domain (`Sm2State`) | DTO / wire | Notes |
+|---|---|---|
+| `Repetitions` (int) | `reps` | direct rename |
+| `EaseFactor` (float) | `easeFactor` | rounded to 4 decimal places on serialize |
+| `IntervalDays` (int) | `intervalDays` | identical |
+| `DueAt` (DateTime, UTC) | `dueAt` | ISO 8601 with `Z` suffix |
+| `LearningStage` (enum) | `stage` | `"new"` / `"learning"` / `"review"` (lowercase string) |
+| `LearningStepIndex` (int) | `learningStep` | absent (`undefined`) when `stage == "review"`; `0` or `1` when `stage == "learning"` |
 
 The Unity client reaches the server through `IScheduleStore` (Application). `HttpScheduleStore` is the primary implementation backed by `UnityWebRequestHttpClient`+UniTask; `JsonFileScheduleCache` provides degraded offline read-back; `CachingScheduleStore` orchestrates them. Tests in `server/sm2.test.js` (algorithm) and `server/server.test.js` (endpoints, idempotency, validation).
 
@@ -256,6 +285,7 @@ A cross-reference between mechanics in this document and the layer that owns the
 | Schedule DTOs + mappers | Infrastructure | `Infrastructure/Dtos/*.cs`, `ScheduleMappers.cs` |
 | `ServerConfigAsset` ScriptableObject | Infrastructure | `Infrastructure/Configuration/ServerConfigAsset.cs` |
 | `DeckAsset` + ScriptableObject deck loading | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` |
+| `DeckAsset` → Domain `Deck` mapping | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` (private mapper, no separate file) |
 | Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerView.cs` |
 | Deck-selection Canvas | Presentation | `Presentation/Foyer/DeckSelectionView.cs` |
 | Review overlay UI + DOTween | Presentation | `Presentation/Review/ReviewView.cs` |
@@ -295,6 +325,7 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 - **Server runs locally on the dev machine.** `server/data.sqlite` lives next to the running server. There is no cloud deployment, no multi-device. If the file is deleted, all SR history is lost.
 - **Server is authoritative for `Sm2State`.** Server-side SM-2 in `server/sm2.js` applies on every `POST /sessions`. The client caches the latest schedule locally (`JsonFileScheduleCache`) for degraded offline use, but the server is the source of truth. Multi-device conflict resolution is last-write-wins on the server (single-device by design — this is acceptable).
 - **Offline is degraded, not full.** With a populated cache the client can start a session and queue uploads (idempotent on `sessionId`). First-run without server = empty UI. Long offline = the cached `dueAt` values drift behind reality (no schedules accumulate without round-trips).
+- **Reconnect order:** when the client comes back online with both pending uploads and a stale cache, `CachingScheduleStore` first drains the pending-uploads queue (one `POST /sessions` per session in FIFO order, idempotent), then performs a fresh `GET /decks/:id/schedule` and overwrites the cache. This guarantees the schedule the user sees reflects all locally-completed work.
 - **No retention mechanics.** No notifications, streaks, goals — by design. The app is a tool, not a service.
 - **Three fixed decks.** Adding a fourth requires authoring a `DeckAsset` + adding the deck row to `server/seed.js`.
 - **No localization.** UI is English-only.

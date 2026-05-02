@@ -20,14 +20,11 @@ Design scope and mechanics: see [docs/GDD.md](docs/GDD.md).
 
 ## Backend
 
-Node.js + Express in `server/`. SQLite (via `better-sqlite3`) stores per-card `Sm2State` — server is authoritative for schedules. Five endpoints:
-- `GET /health` — liveness probe
-- `GET /decks` — list decks with aggregated counts
-- `GET /decks/:id/schedule` — full per-card schedule for a deck
-- `POST /sessions` — accepts session results, runs server-side SM-2, idempotent via `sessionId`
-- `GET /sessions/:id` — fetch a previously processed session
+Node.js + Express in `server/`. **Target state (Roadmap Phase 3.5):** SQLite (via `better-sqlite3`) stores per-card `Sm2State`, server is authoritative for schedules, five endpoints, `zod` validation, idempotency via `sessionId`, OpenAPI 3.1 contract in `server/openapi.yaml`. Tests in `server/server.test.js` and `server/sm2.test.js`.
 
-Validation via `zod`; tests in `server/server.test.js` and `server/sm2.test.js`; API contract in `server/openapi.yaml`. Run with `cd server && npm install && npm start`. Local-only by design — see `server/README.md`.
+**Current state:** skeleton — only `GET /health` is implemented, store is in-memory. Other endpoints (`GET /decks`, `GET /decks/:id/schedule`, `POST /sessions`, `GET /sessions/:id`), SQLite schema, server-side SM-2, and validation will land in Phase 3.5. See [docs/Roadmap.md](docs/Roadmap.md), [docs/GDD.md §8](docs/GDD.md), [server/README.md](server/README.md).
+
+Run with `cd server && npm install && npm start`. Local-only by design — no cloud deployment, no multi-device sync.
 
 ## Project Structure
 

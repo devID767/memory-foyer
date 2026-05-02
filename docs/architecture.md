@@ -60,6 +60,181 @@ MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and bro
 - **Composition guards reentrancy.** `IReviewSessionService.StartAsync` throws `InvalidOperationException` if state is not `Idle` — protects against double-clicks on a pedestal.
 - **Strict nullable is per asmdef.** Each asmdef we own ships with a co-located `csc.rsp` enabling `-nullable:enable -warnaserror+:nullable`. The project-level `Assets/csc.rsp` is intentionally empty (Unity passes every line of it as a compiler argument and has no comment syntax — keep it zero bytes) so `Assembly-CSharp-firstpass` (third-party code under `Assets/Plugins/`) compiles with defaults. Adding a new asmdef without its `csc.rsp` means losing the third architectural enforcement (alongside layer separation and the `IClock` indirection).
 
+## Contracts
+
+Method signatures for the Application interfaces. These are the contracts; implementations in Infrastructure follow them. All async signatures use `UniTask` and accept `CancellationToken ct = default` (omitted below for brevity).
+
+### `IClock` (Domain)
+
+```csharp
+DateTime UtcNow { get; }
+```
+
+### `IDeckRepository` (Application)
+
+```csharp
+UniTask<Deck>          GetDeckAsync(DeckId deckId);     // throws DeckNotFoundException
+UniTask<IReadOnlyList<Deck>> GetAllAsync();
+```
+
+### `IScheduleStore` (Application)
+
+```csharp
+UniTask<DeckSchedule>  GetDeckScheduleAsync(DeckId deckId);   // primary read; may return stale on offline fallback
+UniTask<DeckSchedule>  UploadSessionAsync(SessionResult result); // returns the full updated schedule (see GDD §8)
+UniTask<bool>          IsServerReachableAsync();             // cheap GET /health, used by offline banner
+```
+
+`DeckSchedule` is `record DeckSchedule(DeckId DeckId, IReadOnlyList<CardSchedule> Cards, DateTime FetchedAt, ScheduleSource Source)`. `ScheduleSource` is `{ Server, Cache }` — presenters use it to drive the offline banner.
+
+`SessionResult` is `record SessionResult(Guid SessionId, DeckId DeckId, IReadOnlyList<CardReview> Reviews)` and `CardReview` is `record CardReview(CardId CardId, ReviewGrade Grade, DateTime ReviewedAt)`.
+
+Errors: `HttpScheduleStore` throws `ScheduleStoreUnavailableException` on transport failure (timeout, connection refused, 5xx). `CachingScheduleStore` catches it for `GetDeckScheduleAsync` (returns cache with `Source=Cache` when available, rethrows when cache is empty) and **does not** catch it for `UploadSessionAsync` (the caller queues the pending session). `400`/`409` from the server bubble up as `ScheduleStoreContractException` — these are bugs, not transient.
+
+### `IReviewSessionService` (Application)
+
+```csharp
+SessionState State { get; }                   // Idle | Loading | Playing | Uploading | Error
+UniTask              StartAsync(DeckId deckId);   // throws InvalidOperationException if State != Idle
+void                 RevealCurrent();             // Playing → Playing (front → back), no network
+UniTask              GradeAsync(ReviewGrade grade); // requires State == Playing; advances queue, may end session
+UniTask              EndAsync();                  // Playing → Uploading → Idle
+ReviewCard?          CurrentCard { get; }         // null when not Playing
+int                  Remaining { get; }
+int                  Total { get; }
+```
+
+State transitions:
+
+```
+Idle ──StartAsync──▶ Loading ──schedule fetched──▶ Playing
+                       │                              │
+                       ▼                              ├─GradeAsync (queue not empty)──▶ Playing
+                     Error                            ├─GradeAsync (queue empty)──▶ Uploading
+                       │                              ├─EndAsync──▶ Uploading
+                       └────retry (StartAsync)        ▼
+                                                    Idle  (or Error on upload failure;
+                                                           pending session cached, retry on reconnect)
+```
+
+`Error` is terminal until `StartAsync` is called again. Reentrancy is guarded — calling `StartAsync` while not `Idle` throws.
+
+### `IHttpClient` (Application)
+
+```csharp
+UniTask<TResponse> GetAsync<TResponse>(string path);
+UniTask<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body);
+```
+
+`UnityWebRequestHttpClient` (Infrastructure) implements this. Defaults from `ServerConfig`: `RequestTimeout = 5s`, `Retries = 1` (retry once on transient I/O failure with 200ms back-off; no retry on 4xx).
+
+### `IAnalyticsService` (Application)
+
+```csharp
+void TrackSessionStarted(Guid sessionId, DeckId deckId, int cardCount);
+void TrackSessionFinished(Guid sessionId, int reviewedCount, TimeSpan duration);
+void TrackOfflineFallback(string operation);   // logs degraded-mode events
+```
+
+Two implementations: `ConsoleAnalyticsService` (writes via `UnityEngine.Debug.Log` in development builds) and `NoOpAnalyticsService` (release builds).
+
+## MessagePipe events
+
+Events live in `Application/Events/`. All are `record` types, immutable, no behavior:
+
+```csharp
+record DeckSelectedEvent      (DeckId DeckId);
+record SessionStartedEvent    (Guid SessionId, DeckId DeckId, int CardCount, DateTime StartedAt);
+record CardReviewedEvent      (Guid SessionId, CardId CardId, ReviewGrade Grade, DateTime NextDueAt);
+record SessionFinishedEvent   (Guid SessionId, DeckId DeckId, int ReviewedCount, bool UploadedSuccessfully);
+```
+
+Publishers: `ReviewSessionService` publishes `SessionStartedEvent` / `CardReviewedEvent` / `SessionFinishedEvent`; `FoyerPresenter` publishes `DeckSelectedEvent` on pedestal click. Subscribers: `ReviewPresenter` (all session events), `FoyerPresenter` (`SessionFinishedEvent` to refresh stats), `ConsoleAnalyticsService` (all four for telemetry).
+
+## DI lifetimes
+
+Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
+
+| Type | Lifetime | Notes |
+|---|---|---|
+| `IClock` → `SystemClock` | Singleton | stateless |
+| `Sm2Algorithm` | Singleton | pure functions |
+| `IDeckRepository` → `ScriptableObjectDeckRepository` | Singleton | reads `DeckAsset` once, caches |
+| `IHttpClient` → `UnityWebRequestHttpClient` | Singleton | one long-lived instance |
+| `ServerConfig` | Singleton (instance) | built from `ServerConfigAsset` at scope setup |
+| `IScheduleStore` → `CachingScheduleStore` | Singleton | composite holds `HttpScheduleStore` + `JsonFileScheduleCache` |
+| `HttpScheduleStore`, `JsonFileScheduleCache` | Singleton (concrete) | injected into `CachingScheduleStore` |
+| `IAnalyticsService` → `ConsoleAnalyticsService` (dev) / `NoOpAnalyticsService` (release) | Singleton | conditional registration |
+| `IReviewSessionService` → `ReviewSessionService` | Singleton | holds session state; reentrancy-guarded |
+| MessagePipe `IPublisher<T>` / `ISubscriber<T>` | Singleton | per the package's defaults |
+| `FoyerPresenter`, `ReviewPresenter` | Scoped (per-scene, in `FoyerLifetimeScope`) | `IAsyncStartable` entry points |
+| `PedestalView[]`, `ReviewView` | Scoped | `RegisterComponentInHierarchy<T>()` |
+
+## CachingScheduleStore — algorithm
+
+```
+GetDeckScheduleAsync(deckId):
+  try:
+    schedule = await http.GetDeckScheduleAsync(deckId)
+    cache.Save(schedule)
+    return schedule with Source = Server
+  catch ScheduleStoreUnavailableException:
+    if cache.Has(deckId):
+      analytics.TrackOfflineFallback("GetDeckSchedule")
+      return cache.Load(deckId) with Source = Cache
+    rethrow
+
+UploadSessionAsync(result):
+  cache.AppendPending(result)              // atomic write (temp + rename) — already on disk before HTTP
+  try:
+    schedule = await http.UploadSessionAsync(result)
+    cache.RemovePending(result.SessionId)
+    cache.Save(schedule)
+    return schedule
+  catch ScheduleStoreUnavailableException:
+    analytics.TrackOfflineFallback("UploadSession")
+    rethrow                                 // pending stays on disk; caller (ReviewSessionService) transitions to Error
+
+DrainPendingAsync():                        // called on reconnect / app start
+  for each pending in cache.LoadPending() (FIFO):
+    try:
+      await http.UploadSessionAsync(pending)
+      cache.RemovePending(pending.SessionId)
+    catch transient: stop, retry next round
+    catch ScheduleStoreContractException(409 mismatch): drop pending, log
+```
+
+The cache uses temp-file + atomic rename for both `Save` and `AppendPending`. Corrupt JSON on read → log + treat as missing (start with empty cache for that deck).
+
+## NewCardBudget counter
+
+`NewCardBudget` (Application) is **not stateful** on the client. The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/schedule` by selecting at most `NewCardsPerDay` `Stage=New` cards whose first appearance falls in the current UTC day. The client trusts that filter. `NewCardBudget` exists as an Application-side value object only to expose the cap value to UI ("`{N} new today`" copy, if added later) and to validate `DeckAsset` authoring data.
+
+## Data-flow walkthroughs
+
+**Online happy path** (3-card session on `capitals` deck):
+
+1. Player clicks Capitals pedestal → `FoyerPresenter` publishes `DeckSelectedEvent("capitals")`.
+2. `ReviewPresenter` subscribes; calls `IReviewSessionService.StartAsync("capitals")`.
+3. `ReviewSessionService` transitions `Idle → Loading`, calls `IScheduleStore.GetDeckScheduleAsync("capitals")`.
+4. `CachingScheduleStore` → `HttpScheduleStore` → `GET /decks/capitals/schedule` → 200, schedule cached, returned with `Source=Server`.
+5. Service filters `DueAt ≤ now`, sorts, builds queue. Transitions `Loading → Playing`, publishes `SessionStartedEvent`.
+6. Player grades 3 cards → `GradeAsync(Good)` × 3. Each grade: applies `Sm2Algorithm.Schedule` locally (for `NextDueAt` in the event), appends to in-memory `reviews`, persists via `cache.AppendPending`, publishes `CardReviewedEvent`.
+7. Queue empty → `Playing → Uploading`. Service calls `IScheduleStore.UploadSessionAsync(result)`.
+8. `POST /sessions` → 200 with `updatedSchedule` (full deck). `CachingScheduleStore` removes pending, overwrites cache.
+9. `Uploading → Idle`. Publishes `SessionFinishedEvent(uploadedSuccessfully: true)`.
+10. `FoyerPresenter` re-fetches `GET /decks` to refresh pedestal counts.
+
+**Offline → reconnect** (session completes offline, app reopens later):
+
+1. App starts, server unreachable. `FoyerPresenter` calls `GET /decks` → fails → uses cached deck list, shows offline banner.
+2. Player starts session. `GetDeckScheduleAsync` falls back to cache (`Source=Cache`).
+3. Session completes. `UploadSessionAsync` throws `ScheduleStoreUnavailableException`; pending session is on disk. Service transitions `Uploading → Error`, publishes `SessionFinishedEvent(uploadedSuccessfully: false)`.
+4. App closed, reopened later; server now reachable.
+5. `ProjectLifetimeScope` (`IAsyncStartable`) calls `CachingScheduleStore.DrainPendingAsync()` once at startup.
+6. Pending session uploaded → `cache.RemovePending` → fresh `GET /decks/:id/schedule` overwrites cache.
+7. Foyer shows current counts.
+
 ## What this architecture is *not*
 
 - It's **not** Clean Architecture / Onion / Hexagonal verbatim. It borrows the layer names and dependency direction but stays pragmatic for a small Unity project — no separate "Use Cases" assembly, no DTOs in Application, no IoC container abstraction.
