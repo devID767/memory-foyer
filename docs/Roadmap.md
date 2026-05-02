@@ -40,21 +40,21 @@ Tag: `v0.0.7-docs`.
 
 Tag: `v0.1-domain`.
 
-## Phase 2: Application layer [CURRENT]
+## Phase 2: Application layer
 
-- [ ] **2.1** `IDeckRepository` interface
-- [ ] **2.2** `IScheduleStore` interface + `SessionResult` / `CardReview` records (`Application/Persistence/`)
-- [ ] **2.3** `ServerConfig` record (`Application/Configuration/`)
-- [ ] **2.4** `CachingScheduleStore` composite (HTTP primary + JSON cache fallback)
-- [ ] **2.5** `IAnalyticsService`
-- [ ] **2.6** `IReviewSessionService` interface + `SessionState` enum
-- [ ] **2.7** `ReviewSessionService` implementation (depends on `IScheduleStore`)
-- [ ] **2.8** Session events (`SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`, `DeckSelectedEvent`)
-- [ ] **2.9** `ReviewSessionService` tests with fakes (~7 cases)
+- [x] **2.1** `IDeckRepository` interface _(2026-05-02)_
+- [x] **2.2** `IScheduleStore` interface + `SessionResult` / `CardReview` records (`Application/Persistence/`) _(2026-05-02)_
+- [x] **2.3** `ServerConfig` record (`Application/Configuration/`) _(2026-05-02)_
+- [x] **2.4** `CachingScheduleStore` composite (HTTP primary + JSON cache fallback) _(2026-05-02)_
+- [x] **2.5** `IAnalyticsService` _(2026-05-02)_
+- [x] **2.6** `IReviewSessionService` interface + `SessionState` enum _(2026-05-02)_
+- [x] **2.7** `ReviewSessionService` implementation (depends on `IScheduleStore`) _(2026-05-02)_
+- [x] **2.8** Session events (`SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`, `DeckSelectedEvent`) _(2026-05-02)_
+- [x] **2.9** `ReviewSessionService` tests with fakes (~7 cases) _(2026-05-02)_
 
 Tag: `v0.2-application`.
 
-## Phase 3: Infrastructure layer
+## Phase 3: Infrastructure layer [CURRENT]
 
 - [ ] **3.1** Schedule DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`)
 - [ ] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`)
