@@ -32,7 +32,7 @@ Tag: `v0.0.7-docs`.
 - [x] **1.2** `ReviewGrade` enum (Again=0, Hard=3, Good=4, Easy=5) _(2026-05-01)_
 - [x] **1.3** `Sm2State` value object _(2026-05-02)_
 - [x] **1.4** `IClock` interface + `SystemClock` implementation _(2026-05-02)_
-- [ ] **1.5** `Sm2Algorithm.Schedule(state, grade, reviewedAt)` — pure SM-2
+- [x] **1.5** `Sm2Algorithm.Schedule(state, grade, reviewedAt)` — pure SM-2 _(2026-05-02)_
 - [ ] **1.6** EditMode test asmdef setup
 - [ ] **1.7** SM-2 tests: NewCard & first review (~9 cases)
 - [ ] **1.8** SM-2 tests: subsequent reviews & EF bounds (~5 cases)
