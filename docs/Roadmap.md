@@ -1,8 +1,8 @@
 # Roadmap
 
-High-level project phases, mirroring the execution plan in `memory-foyer-plan.md` §4. The phase marked `[CURRENT]` is the active focus. Sub-task IDs (e.g. `0.3`) reference the same numbering as the plan — a sub-task closes when its commit lands.
+High-level project phases. The phase marked `[CURRENT]` is the active focus. Sub-task IDs (e.g. `0.3`) are atomic units of work — a sub-task closes when its commit lands.
 
-## Phase 0: Project scaffolding [CURRENT]
+## Phase 0: Project scaffolding
 
 - [x] **0.1** Create GitHub repo & local structure _(done — repo initialized, structure in place)_
 - [x] **0.2** Create Unity 6 URP project _(done in commit 0d89b19)_
@@ -11,10 +11,25 @@ High-level project phases, mirroring the execution plan in `memory-foyer-plan.md
 - [x] **0.5** Wire up Node.js Express server skeleton _(endpoints come in Phase 3.5)_
 - [x] **0.6** README skeleton at repo root
 
-## Phase 1: Domain layer & SM-2 algorithm
+## Phase 0.7: Documentation reconciliation
 
-- [ ] **1.1** `Card`, `Deck` models + `CardId`, `DeckId` record structs
-- [ ] **1.2** `ReviewGrade` enum (Again=0, Hard=3, Good=4, Easy=5)
+Single pass to align GDD / architecture.md / Roadmap.md / CLAUDE.md after the persistence/backend redesign locked in `IScheduleStore` + authoritative server.
+
+- [x] **0.7.1** Sweep 9 doc inconsistencies (event names, `ISessionUploader` vs `ISessionResultsUploader`, `DeckAsset` vs `DeckScriptableObject`, stray `IRandomProvider`, `Resources/Data` vs `ScriptableObjects/`, stale `memory-foyer-plan.md` reference, Phase 1.2 date format, commit-hash check, Card/Deck-as-records confirmation) _(2026-05-02)_
+- [x] **0.7.2** Rewrite GDD §8 (5 endpoints, SQLite, idempotency) _(2026-05-02)_
+- [x] **0.7.3** Rewrite GDD §12 Architectural Mapping (replace uploader/stats with `IScheduleStore` triple; canon event names) _(2026-05-02)_
+- [x] **0.7.4** Rewrite GDD §15 Limitations (authoritative server, degraded offline, last-write-wins) _(2026-05-02)_
+- [x] **0.7.5** GDD §4.5 — drop `IRandomProvider`, keep only `IClock` _(2026-05-02)_
+- [x] **0.7.6** architecture.md — Composition root + Project-specific conventions _(2026-05-02)_
+- [x] **0.7.7** CLAUDE.md — drop `Resources/Data/`, drop `IRandomProvider`, refresh Backend section _(2026-05-02)_
+- [x] **0.7.8** Roadmap.md — Phase 2/3/3.5 restructure (this file) _(2026-05-02)_
+
+Tag: `v0.0.7-docs`.
+
+## Phase 1: Domain layer & SM-2 algorithm [CURRENT]
+
+- [x] **1.1** `Card`, `Deck` models + `CardId`, `DeckId` record structs _(2026-05-01)_
+- [x] **1.2** `ReviewGrade` enum (Again=0, Hard=3, Good=4, Easy=5) _(2026-05-01)_
 - [ ] **1.3** `Sm2State` value object
 - [ ] **1.4** `IClock` interface + `SystemClock` implementation
 - [ ] **1.5** `Sm2Algorithm.Schedule(state, grade, reviewedAt)` — pure SM-2
@@ -28,37 +43,52 @@ Tag: `v0.1-domain`.
 ## Phase 2: Application layer
 
 - [ ] **2.1** `IDeckRepository` interface
-- [ ] **2.2** `ISessionResultsUploader` + `SessionResult` / `CardReview` records
-- [ ] **2.3** `ISessionStatsProvider` + `DeckStats`
-- [ ] **2.4** `IAnalyticsService`
-- [ ] **2.5** `IReviewSessionService` interface + `SessionState` enum
-- [ ] **2.6** `ReviewSessionService` implementation
-- [ ] **2.7** Session events (`SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`)
-- [ ] **2.8** `ReviewSessionService` tests with fakes (~7 cases)
+- [ ] **2.2** `IScheduleStore` interface + `SessionResult` / `CardReview` records (`Application/Persistence/`)
+- [ ] **2.3** `ServerConfig` record (`Application/Configuration/`)
+- [ ] **2.4** `CachingScheduleStore` composite (HTTP primary + JSON cache fallback)
+- [ ] **2.5** `IAnalyticsService`
+- [ ] **2.6** `IReviewSessionService` interface + `SessionState` enum
+- [ ] **2.7** `ReviewSessionService` implementation (depends on `IScheduleStore`)
+- [ ] **2.8** Session events (`SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`, `DeckSelectedEvent`)
+- [ ] **2.9** `ReviewSessionService` tests with fakes (~7 cases)
 
 Tag: `v0.2-application`.
 
 ## Phase 3: Infrastructure layer
 
-- [ ] **3.1** DTOs (`DeckStatsDto`, `SessionResultDto`, `CardReviewDto`)
-- [ ] **3.2** Domain ↔ DTO mappers
-- [ ] **3.3** `IHttpClient` (in Application) + `UnityWebRequestHttpClient` (in Infrastructure)
-- [ ] **3.4** `HttpSessionResultsUploader`, `HttpSessionStatsProvider`
-- [ ] **3.5** `DeckScriptableObject` + `ScriptableObjectDeckRepository`
-- [ ] **3.6** `ConsoleAnalyticsService`, `NoOpAnalyticsService`
-- [ ] **3.7** Mapper tests (~4 cases)
+- [ ] **3.1** Schedule DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`)
+- [ ] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`)
+- [ ] **3.3** `IHttpClient` (Application) + `UnityWebRequestHttpClient` (Infrastructure)
+- [ ] **3.4** `HttpScheduleStore` (`Infrastructure/Persistence/`)
+- [ ] **3.5** `JsonFileScheduleCache` (`Infrastructure/Persistence/`, `Application.persistentDataPath`)
+- [ ] **3.6** `ServerConfigAsset` ScriptableObject + `Assets/Resources/Config/ServerConfig.asset`
+- [ ] **3.7** `DeckAsset` + `ScriptableObjectDeckRepository`
+- [ ] **3.8** `ConsoleAnalyticsService`, `NoOpAnalyticsService`
+- [ ] **3.9** Mapper tests (~6 cases)
 
 Tag: `v0.3-infrastructure`.
 
-## Phase 3.5: Backend mock endpoints
+## Phase 3.5: Backend (authoritative, local)
 
-- [ ] **3.5.1** `GET /decks/:id/stats` with three default decks
-- [ ] **3.5.2** `POST /sessions` (decrements due-count)
-- [ ] **3.5.3** `server/README.md` with run + curl examples
+May proceed in parallel with Phase 1 — no shared files with the Unity client.
+
+- [ ] **3.5.1** `server/package.json` + deps (`express`, `better-sqlite3`, `zod`; dev: `vitest` or `node:test`)
+- [ ] **3.5.2** `server/schema.sql` + migration loader in `server.js`
+- [ ] **3.5.3** `server/seed.js` — three decks from GDD §7
+- [ ] **3.5.4** `server/sm2.js` (port of GDD §4) + `server/sm2.test.js`
+- [ ] **3.5.5** `server/server.js` — Express scaffold, `zod` validation, error middleware
+- [ ] **3.5.6** `GET /health`, `GET /decks`, `GET /decks/:id/schedule`
+- [ ] **3.5.7** `POST /sessions` (server-side SM-2 + idempotency on `sessionId`)
+- [ ] **3.5.8** `GET /sessions/:id`
+- [ ] **3.5.9** `server/server.test.js` — integration tests (~7 cases)
+- [ ] **3.5.10** `server/openapi.yaml`
+- [ ] **3.5.11** `server/README.md` — run, curl, schema, why-authoritative
+
+Tag: `v0.3.5-backend`.
 
 ## Phase 4: VContainer wiring
 
-- [ ] **4.1** `ProjectLifetimeScope` with all bindings + MessagePipe registration
+- [ ] **4.1** `ProjectLifetimeScope` with all bindings (incl. `IScheduleStore` triple, `ServerConfig`) + MessagePipe registration
 - [ ] **4.2** `FoyerLifetimeScope` (initially empty, populated in Phase 5/6)
 - [ ] **4.3** Composition smoke-test `IStartable`
 
@@ -81,7 +111,7 @@ Tag: `v0.4-foyer-mvp`.
 - [ ] **6.3** `ReviewPresenter` wired to `IReviewSessionService`
 - [ ] **6.4** Register both presenters in `FoyerLifetimeScope`
 - [ ] **6.5** Pedestal stats refresh on `SessionFinishedEvent`
-- [ ] **6.6** End-to-end smoke (server + Unity Play)
+- [ ] **6.6** End-to-end smoke (server + Unity Play; verify offline-cache fallback by stopping server mid-session)
 
 Tag: `v0.5-mvp`.
 

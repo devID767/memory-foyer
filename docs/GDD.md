@@ -103,8 +103,8 @@ Easy on any learning step graduates to `Review` immediately with `Interval=4, Re
 
 ### 4.5 Determinism
 
-- Time flows through `IClock`; randomness through `IRandomProvider`.
-- The algorithm is a pure function: `(CardState, Grade, Now) → CardState`.
+- Time flows through `IClock`.
+- The algorithm is a pure function: `(CardState, Grade, Now) → CardState`. No randomness — session ordering also deterministic (oldest `DueAt` first, ties broken by stable `cardId`).
 - All operations are unit-tested across ~25 cases including learning, graduation, lapse-from-long-interval, EF floor, interval cap.
 
 ## 5. Session Rules
@@ -168,19 +168,25 @@ Decks are `ScriptableObject` assets under `Assets/ScriptableObjects/Decks/`.
 
 Authoring is via a custom Editor window (`Editor/DeckAuthor/DeckAuthorWindow.cs`, UI Toolkit). CSV import is a Phase 7 stretch.
 
-## 8. Backend (Mock)
+## 8. Backend
 
-Node.js + Express, single file `server/server.js`.
+Node.js + Express in `server/`. SQLite (`better-sqlite3`) is the system of record for per-card `Sm2State`.
 
-- **State:** in-memory Map, mirrored to `server/data.json` on every mutation. On boot, file is loaded if present.
-- **Idempotency:** server keeps a `Set<sessionId>` of processed session uploads. Duplicates return `200 { ok: true, dedup: true }` without mutating.
+- **Storage:** SQLite file `server/data.sqlite`. Schema in `server/schema.sql` (decks, cards, card_schedules, processed_sessions, review_log). Initialized on first start; corrupt-file recovery — log warning, start fresh.
+- **Server-side SM-2:** `server/sm2.js` ports the algorithm from §4. The server is authoritative — it applies SM-2 on `POST /sessions` and the response carries the updated schedule.
+- **Validation:** `zod` schemas on every endpoint. Bad input → `400 { error, details }`.
+- **Idempotency:** `processed_sessions.session_id` is `UNIQUE`. A repeat `POST /sessions` with the same `sessionId` returns `200 { ok: true, dedup: true, updatedSchedule }` without mutating.
+- **API contract:** `server/openapi.yaml` (OpenAPI 3.1).
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/decks/:id/stats` | `{ deckId, dueCount, totalCount }` |
-| POST | `/sessions` | Accepts `{ sessionId, deckId, reviews }`; updates `dueCount`; returns `{ ok: true, dedup?: bool }` |
+| GET | `/health` | Liveness probe — `{ status: 'ok', version }` |
+| GET | `/decks` | List decks with aggregated counts — `[{ deckId, displayName, dueCount, newCount, totalCount }]` |
+| GET | `/decks/:id/schedule` | Full per-card schedule — `{ deckId, cards: [{ cardId, reps, easeFactor, intervalDays, dueAt, stage, learningStep }] }` |
+| POST | `/sessions` | Accepts `{ sessionId, deckId, reviews }`; runs server-side SM-2; returns `{ ok: true, dedup?: bool, updatedSchedule }` |
+| GET | `/sessions/:id` | Fetch a previously processed session — `{ sessionId, deckId, processedAt, reviews }` |
 
-The Unity client uses `UnityWebRequestHttpClient` wrapped with UniTask. The mock is intentionally dumb — its purpose is to prove the wire works, not to be a real service.
+The Unity client reaches the server through `IScheduleStore` (Application). `HttpScheduleStore` is the primary implementation backed by `UnityWebRequestHttpClient`+UniTask; `JsonFileScheduleCache` provides degraded offline read-back; `CachingScheduleStore` orchestrates them. Tests in `server/sm2.test.js` (algorithm) and `server/server.test.js` (endpoints, idempotency, validation).
 
 ## 9. Copy & UI Text
 
@@ -234,21 +240,28 @@ A cross-reference between mechanics in this document and the layer that owns the
 | Concern | Layer | Owning file |
 |---|---|---|
 | SM-2 algorithm (pure function) | Domain | `Domain/Scheduling/Sm2Algorithm.cs` |
-| Card / Deck records | Domain | `Domain/Models/Card.cs`, `Deck.cs` |
-| `IClock`, `IRandomProvider` | Domain | `Domain/Time/IClock.cs`, `Domain/Random/IRandomProvider.cs` |
+| `Card`, `Deck`, `Sm2State` records | Domain | `Domain/Models/Card.cs`, `Deck.cs`, `Domain/Scheduling/Sm2State.cs` |
+| `ReviewGrade` enum | Domain | `Domain/Scheduling/ReviewGrade.cs` |
+| `IClock` | Domain | `Domain/Time/IClock.cs` |
 | Session orchestration / state machine | Application | `Application/Sessions/ReviewSessionService.cs` |
 | New-cards-per-day budget logic | Application | `Application/Sessions/NewCardBudget.cs` |
-| Result DTO assembly | Application | `Application/Sessions/SessionResultBuilder.cs` |
-| Repository / uploader interfaces | Application | `Application/Repositories/IDeckRepository.cs`, `Application/Sessions/ISessionUploader.cs` |
+| `SessionResult` / `CardReview` records | Application | `Application/Persistence/SessionResult.cs` |
+| `IScheduleStore` interface | Application | `Application/Persistence/IScheduleStore.cs` |
+| `CachingScheduleStore` (HTTP+cache composite) | Application | `Application/Persistence/CachingScheduleStore.cs` |
+| `ServerConfig` record | Application | `Application/Configuration/ServerConfig.cs` |
+| `IDeckRepository` interface | Application | `Application/Repositories/IDeckRepository.cs` |
 | HTTP client (UnityWebRequest + UniTask) | Infrastructure | `Infrastructure/Http/UnityWebRequestHttpClient.cs` |
-| Stats fetch / session upload | Infrastructure | `Infrastructure/Http/HttpStatsClient.cs`, `HttpSessionUploader.cs` |
-| ScriptableObject deck loading | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` |
+| `HttpScheduleStore` (primary `IScheduleStore`) | Infrastructure | `Infrastructure/Persistence/HttpScheduleStore.cs` |
+| `JsonFileScheduleCache` (offline fallback) | Infrastructure | `Infrastructure/Persistence/JsonFileScheduleCache.cs` |
+| Schedule DTOs + mappers | Infrastructure | `Infrastructure/Dtos/*.cs`, `ScheduleMappers.cs` |
+| `ServerConfigAsset` ScriptableObject | Infrastructure | `Infrastructure/Configuration/ServerConfigAsset.cs` |
+| `DeckAsset` + ScriptableObject deck loading | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` |
 | Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerView.cs` |
 | Deck-selection Canvas | Presentation | `Presentation/Foyer/DeckSelectionView.cs` |
 | Review overlay UI + DOTween | Presentation | `Presentation/Review/ReviewView.cs` |
 | Offline banner | Presentation | `Presentation/Foyer/OfflineBannerView.cs` |
 | DI registrations | Composition | `Composition/ProjectLifetimeScope.cs`, `FoyerLifetimeScope.cs` |
-| MessagePipe events on the bus | App → Pres | `DeckSelectedEvent`, `SessionCompletedEvent`, `CardGradedEvent` |
+| MessagePipe events on the bus | App → Pres | `DeckSelectedEvent`, `SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent` |
 
 **Boundary checks (enforced by `.asmdef`):**
 - `Domain` does not reference `UnityEngine` (asmdef `noEngineReferences: true`).
@@ -275,16 +288,17 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 | VContainer / UniTask / MessagePipe version conflicts on Unity 6 | Low | High | Pin versions in `manifest.json`; verify in Phase 0 before any logic code. |
 | Soft-lapse + learning-steps add complexity → tests blow out | Medium | Medium | Algorithm under `Domain/`; if Phase 1 (algorithm) > 4 h, drop learning steps and document. |
 | URP post-FX makes backdrop look "off" on Windows | Low | Medium | Use only stock Volume profiles; no custom render passes. |
-| Server JSON file grows / corrupts | Low | Low | File ignored in git; on parse failure server starts fresh and logs warning. |
+| Server SQLite file corrupts | Low | Low | File ignored in git; on open failure server logs and re-initializes from `schema.sql` + `seed.js`. |
 
 ## 15. Limitations (Honest)
 
-- **Persistence is local to the dev machine.** `server/data.json` lives next to the running server. There is no cloud sync, no multi-device. If the file is deleted, all SR history is lost.
+- **Server runs locally on the dev machine.** `server/data.sqlite` lives next to the running server. There is no cloud deployment, no multi-device. If the file is deleted, all SR history is lost.
+- **Server is authoritative for `Sm2State`.** Server-side SM-2 in `server/sm2.js` applies on every `POST /sessions`. The client caches the latest schedule locally (`JsonFileScheduleCache`) for degraded offline use, but the server is the source of truth. Multi-device conflict resolution is last-write-wins on the server (single-device by design — this is acceptable).
+- **Offline is degraded, not full.** With a populated cache the client can start a session and queue uploads (idempotent on `sessionId`). First-run without server = empty UI. Long offline = the cached `dueAt` values drift behind reality (no schedules accumulate without round-trips).
 - **No retention mechanics.** No notifications, streaks, goals — by design. The app is a tool, not a service.
-- **Mock backend is "dumb."** Server trusts client-computed schedules; in a real system the algorithm would run server-side and validate.
-- **Three fixed decks.** Adding a fourth requires Inspector work + a server-side hardcoded entry.
+- **Three fixed decks.** Adding a fourth requires authoring a `DeckAsset` + adding the deck row to `server/seed.js`.
 - **No localization.** UI is English-only.
-- **Mid-session force-quit during offline mode loses ungraded reviews.** Pending grades live in client memory until upload — closing the app before the server is reachable drops them. Acceptable scope for the portfolio; in production this would need a local write-ahead log.
+- **Mid-session hard-crash before upload loses pending grades in the queue.** `CachingScheduleStore` keeps pending uploads on disk in `JsonFileScheduleCache`, so a normal app close survives. A process crash before flush may drop the in-flight session. Acceptable for the portfolio; production would need a write-ahead log.
 
 ## 16. Open Design Questions
 

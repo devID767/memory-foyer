@@ -20,11 +20,14 @@ Design scope and mechanics: see [docs/GDD.md](docs/GDD.md).
 
 ## Backend
 
-Node.js + Express mock in `server/server.js`. In-memory state, two endpoints:
-- `GET /decks/:id/stats` — returns `{ deckId, dueCount, totalCount }`
-- `POST /sessions` — accepts `SessionResultDto`, decrements `dueCount`
+Node.js + Express in `server/`. SQLite (via `better-sqlite3`) stores per-card `Sm2State` — server is authoritative for schedules. Five endpoints:
+- `GET /health` — liveness probe
+- `GET /decks` — list decks with aggregated counts
+- `GET /decks/:id/schedule` — full per-card schedule for a deck
+- `POST /sessions` — accepts session results, runs server-side SM-2, idempotent via `sessionId`
+- `GET /sessions/:id` — fetch a previously processed session
 
-Single file, no build step. Run with `cd server && node server.js`.
+Validation via `zod`; tests in `server/server.test.js` and `server/sm2.test.js`; API contract in `server/openapi.yaml`. Run with `cd server && npm install && npm start`. Local-only by design — see `server/README.md`.
 
 ## Project Structure
 
@@ -39,7 +42,7 @@ docs/                   # All project documentation
 server/                 # Node.js + Express mock backend
 Assets/
   Plugins/              # Third-party — DO NOT MODIFY
-  Resources/Data/       # ScriptableObject configs (created via Unity Inspector)
+  Resources/Config/     # ScriptableObject configs loaded at runtime (e.g. ServerConfig.asset)
   Scenes/               # Foyer.unity
   Scripts/
     Domain/             # Pure C#, no UnityEngine — Card, Deck, Sm2Algorithm, IClock
@@ -60,7 +63,7 @@ ProjectSettings/
 
 Layered: Domain → Application → Infrastructure → Presentation, with a Composition root.
 Strict separation enforced via assembly definitions; Domain has `noEngineReferences: true`.
-Time and randomness live behind `IClock` / `IRandomProvider` interfaces — never call `DateTime.UtcNow` or `UnityEngine.Random` from scheduling code.
+Time lives behind an `IClock` interface — never call `DateTime.UtcNow` from scheduling code. Per-card `Sm2State` is loaded/persisted via `IScheduleStore` (Application interface, HTTP-backed implementation in Infrastructure with a JSON-file cache for offline).
 
 Full detail: see [docs/architecture.md](docs/architecture.md).
 
