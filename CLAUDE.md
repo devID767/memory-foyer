@@ -49,7 +49,7 @@ Assets/
     Composition/        # VContainer LifetimeScopes (composition root)
   Editor/               # Editor tools (Deck Author UI Toolkit window)
   Tests/EditMode/       # Logic tests (NUnit)
-  ScriptableObjects/    # Runtime data assets (decks)
+  Resources/Decks/      # DeckAsset SOs (loaded via Resources.Load)
   Prefabs/              # Pedestal.prefab etc.
   Settings/             # URP render pipeline settings
 Packages/

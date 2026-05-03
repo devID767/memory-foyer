@@ -168,7 +168,7 @@ Single Canvas, screen-space overlay:
 
 ## 7. Content — Decks
 
-Decks are `ScriptableObject` assets under `Assets/ScriptableObjects/Decks/`.
+Decks are `ScriptableObject` assets under `Assets/Resources/Decks/`.
 
 ```csharp
 [CreateAssetMenu(...)] class DeckAsset : ScriptableObject
