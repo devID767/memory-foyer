@@ -71,6 +71,30 @@ namespace MemoryFoyer.Tests.EditMode.Infrastructure.Dtos
         }
 
         [Test]
+        public void FromDto_CardSchedule_RelearningStagePreservesLearningStep()
+        {
+            // Arrange
+            CardScheduleDto dto = new CardScheduleDto
+            {
+                cardId = "c1",
+                reps = 3,
+                easeFactor = 2.30,
+                intervalDays = 30,
+                dueAt = "2026-05-03T12:00:00.000Z",
+                stage = "relearning",
+                learningStep = 1,
+            };
+
+            // Act
+            CardSchedule result = ScheduleMappers.FromDto(dto);
+
+            // Assert
+            Assert.That(result.State.Stage, Is.EqualTo(LearningStage.Relearning));
+            Assert.That(result.State.LearningStepIndex, Is.EqualTo(1));
+            Assert.That(result.State.Repetitions, Is.EqualTo(3));
+        }
+
+        [Test]
         public void ToDto_CardSchedule_ReviewStageZeroesLearningStep()
         {
             // Arrange

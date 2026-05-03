@@ -43,7 +43,9 @@ namespace MemoryFoyer.Infrastructure.Dtos
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
-            int learningStepIndex = stage == LearningStage.Learning ? dto.learningStep : 0;
+            int learningStepIndex = (stage == LearningStage.Learning || stage == LearningStage.Relearning)
+                ? dto.learningStep
+                : 0;
 
             Sm2State state = new Sm2State(
                 Repetitions: dto.reps,
@@ -170,6 +172,7 @@ namespace MemoryFoyer.Infrastructure.Dtos
                 "new" => LearningStage.New,
                 "learning" => LearningStage.Learning,
                 "review" => LearningStage.Review,
+                "relearning" => LearningStage.Relearning,
                 _ => throw new FormatException($"Unknown stage value from wire: '{stage}'."),
             };
         }
