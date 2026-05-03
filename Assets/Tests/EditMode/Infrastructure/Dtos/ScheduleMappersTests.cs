@@ -49,7 +49,7 @@ namespace MemoryFoyer.Tests.EditMode.Infrastructure.Dtos
         }
 
         [Test]
-        public void ToDto_CardSchedule_RelearningStageSerializesAsLearning()
+        public void ToDto_CardSchedule_RelearningStageRoundTrips()
         {
             // Arrange
             Sm2State state = new Sm2State(
@@ -58,7 +58,7 @@ namespace MemoryFoyer.Tests.EditMode.Infrastructure.Dtos
                 IntervalDays: 1,
                 DueAt: DueAt,
                 Stage: LearningStage.Relearning,
-                LearningStepIndex: 0);
+                LearningStepIndex: 1);
             CardSchedule original = new CardSchedule(new CardId("c1"), state);
 
             // Act
@@ -66,8 +66,11 @@ namespace MemoryFoyer.Tests.EditMode.Infrastructure.Dtos
             CardSchedule roundTripped = ScheduleMappers.FromDto(dto);
 
             // Assert
-            Assert.That(dto.stage, Is.EqualTo("learning"));
-            Assert.That(roundTripped.State.Stage, Is.EqualTo(LearningStage.Learning));
+            Assert.That(dto.stage, Is.EqualTo("relearning"));
+            Assert.That(dto.learningStep, Is.EqualTo(1));
+            Assert.That(roundTripped.State.Stage, Is.EqualTo(LearningStage.Relearning));
+            Assert.That(roundTripped.State.LearningStepIndex, Is.EqualTo(1));
+            Assert.That(roundTripped.State.Repetitions, Is.EqualTo(2));
         }
 
         [Test]

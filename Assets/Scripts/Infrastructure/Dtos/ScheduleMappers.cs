@@ -144,8 +144,8 @@ namespace MemoryFoyer.Infrastructure.Dtos
         // ── Stage wire helpers ────────────────────────────────────────────────
 
         /// <summary>
-        /// Maps a Domain LearningStage to its wire string.
-        /// Relearning maps to "learning" (lossy, intentional — server does not distinguish).
+        /// Maps a Domain LearningStage to its wire string. The wire format
+        /// distinguishes all four stages 1:1 with the Domain enum.
         /// </summary>
         public static string StageToWire(LearningStage stage)
         {
@@ -154,7 +154,7 @@ namespace MemoryFoyer.Infrastructure.Dtos
                 LearningStage.New => "new",
                 LearningStage.Learning => "learning",
                 LearningStage.Review => "review",
-                LearningStage.Relearning => "learning",
+                LearningStage.Relearning => "relearning",
                 _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, "Unknown LearningStage value."),
             };
         }
