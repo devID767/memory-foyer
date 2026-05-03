@@ -1,0 +1,23 @@
+[
+  {
+    "deckId": "capitals",
+    "displayName": "Capitals of Europe",
+    "description": "44 European countries and their capital cities.",
+    "newCardsPerDay": 10,
+    "cardIds": ["capitals:1", "capitals:2", "capitals:3", "capitals:4", "capitals:5", "capitals:6", "capitals:7", "capitals:8", "capitals:9", "capitals:10", "capitals:11", "capitals:12", "capitals:13", "capitals:14", "capitals:15", "capitals:16", "capitals:17", "capitals:18", "capitals:19", "capitals:20", "capitals:21", "capitals:22", "capitals:23", "capitals:24", "capitals:25", "capitals:26", "capitals:27", "capitals:28", "capitals:29", "capitals:30", "capitals:31", "capitals:32", "capitals:33", "capitals:34", "capitals:35", "capitals:36", "capitals:37", "capitals:38", "capitals:39", "capitals:40", "capitals:41", "capitals:42", "capitals:43", "capitals:44"]
+  },
+  {
+    "deckId": "idioms",
+    "displayName": "English Idioms",
+    "description": "30 common English idioms and their meanings.",
+    "newCardsPerDay": 8,
+    "cardIds": ["idioms:1", "idioms:2", "idioms:3", "idioms:4", "idioms:5", "idioms:6", "idioms:7", "idioms:8", "idioms:9", "idioms:10", "idioms:11", "idioms:12", "idioms:13", "idioms:14", "idioms:15", "idioms:16", "idioms:17", "idioms:18", "idioms:19", "idioms:20", "idioms:21", "idioms:22", "idioms:23", "idioms:24", "idioms:25", "idioms:26", "idioms:27", "idioms:28", "idioms:29", "idioms:30"]
+  },
+  {
+    "deckId": "periodic",
+    "displayName": "Periodic Table 1-20",
+    "description": "The first 20 chemical elements by atomic number.",
+    "newCardsPerDay": 5,
+    "cardIds": ["periodic:1", "periodic:2", "periodic:3", "periodic:4", "periodic:5", "periodic:6", "periodic:7", "periodic:8", "periodic:9", "periodic:10", "periodic:11", "periodic:12", "periodic:13", "periodic:14", "periodic:15", "periodic:16", "periodic:17", "periodic:18", "periodic:19", "periodic:20"]
+  }
+]
