@@ -54,7 +54,7 @@ Tag: `v0.1-domain`.
 
 Tag: `v0.2-application`.
 
-## Phase 3: Infrastructure layer [CURRENT]
+## Phase 3: Infrastructure layer
 
 - [x] **3.1** Schedule DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`) _(2026-05-03)_
 - [x] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`) _(2026-05-03)_
@@ -86,7 +86,7 @@ May proceed in parallel with Phase 1 — no shared files with the Unity client.
 
 Tag: `v0.3.5-backend`.
 
-## Phase 4: VContainer wiring
+## Phase 4: VContainer wiring [CURRENT]
 
 - [ ] **4.1** `ProjectLifetimeScope` with all bindings (incl. `IScheduleStore` triple, `ServerConfig`) + MessagePipe registration
 - [ ] **4.2** `FoyerLifetimeScope` (initially empty, populated in Phase 5/6)
