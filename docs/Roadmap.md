@@ -56,10 +56,10 @@ Tag: `v0.2-application`.
 
 ## Phase 3: Infrastructure layer [CURRENT]
 
-- [ ] **3.1** Schedule DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`)
-- [ ] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`)
-- [ ] **3.3** `IHttpClient` (Application) + `UnityWebRequestHttpClient` (Infrastructure)
-- [ ] **3.4** `HttpScheduleStore` (`Infrastructure/Persistence/`)
+- [x] **3.1** Schedule DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`) _(2026-05-03)_
+- [x] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`) _(2026-05-03)_
+- [x] **3.3** `IHttpClient` (Application) + `UnityWebRequestHttpClient` (Infrastructure) _(2026-05-03)_
+- [x] **3.4** `HttpScheduleStore` (`Infrastructure/Persistence/`) _(2026-05-03)_
 - [ ] **3.5** `JsonFileScheduleCache` (`Infrastructure/Persistence/`, `Application.persistentDataPath`)
 - [ ] **3.6** `ServerConfigAsset` ScriptableObject + `Assets/Resources/Config/ServerConfig.asset`
 - [ ] **3.7** `DeckAsset` + `ScriptableObjectDeckRepository`
