@@ -83,6 +83,7 @@ May proceed in parallel with Phase 1 — no shared files with the Unity client.
 - [x] **3.5.9** `server/server.test.js` — integration tests (~7 cases) _(2026-05-03)_
 - [x] **3.5.10** `server/openapi.yaml` _(2026-05-03)_
 - [x] **3.5.11** `server/README.md` — run, curl, schema, why-authoritative _(2026-05-03)_
+- [x] **3.5.12** `DeckExporter` editor tool (`Tools → Memory Foyer → Export Decks`) — generates `server/decks.json` from DeckAssets _(2026-05-04)_
 
 Tag: `v0.3.5-backend`.
 
@@ -96,11 +97,11 @@ Tag: `v0.3.5-backend`.
 
 - [ ] **5.1** Scene setup (floor, walls, lighting)
 - [ ] **5.2** URP post-processing (bloom, vignette)
-- [ ] **5.3** `Pedestal.prefab`
-- [ ] **5.4** `PedestalView` MonoBehaviour (hover + click via `IPointerHandler`)
-- [ ] **5.5** Three pedestals placed + DI binding via `FoyerPresenter`
-- [ ] **5.6** Cinemachine virtual camera with slow orbit
-- [ ] **5.7** EventSystem + PhysicsRaycaster sanity check
+- [ ] **5.3** Deck-button prefab (UGUI: name + stats label + disabled state)
+- [ ] **5.4** `DeckSelectionView` MonoBehaviour (3 deck buttons + offline banner)
+- [ ] **5.5** `FoyerPresenter` pulls `IDeckRepository` + `IScheduleStore`, feeds `DeckSelectionView`
+- [ ] **5.6** Cinemachine virtual camera with slow dolly (~6 s loop, non-interactive)
+- [ ] **5.7** EventSystem + GraphicRaycaster sanity check (UGUI overlay)
 
 Tag: `v0.4-foyer-mvp`.
 
@@ -110,12 +111,14 @@ Tag: `v0.4-foyer-mvp`.
 - [ ] **6.2** `ReviewView` MonoBehaviour
 - [ ] **6.3** `ReviewPresenter` wired to `IReviewSessionService`
 - [ ] **6.4** Register both presenters in `FoyerLifetimeScope`
-- [ ] **6.5** Pedestal stats refresh on `SessionFinishedEvent`
+- [ ] **6.5** Deck-button stats refresh on `SessionFinishedEvent`
 - [ ] **6.6** End-to-end smoke (server + Unity Play; verify offline-cache fallback by stopping server mid-session)
 
 Tag: `v0.5-mvp`.
 
 ## Phase 7: Editor tool (UI Toolkit)
+
+`DeckExporter` (3.5.12) already covers the deck → server sync path. Phase 7 adds a richer authoring surface on top.
 
 - [ ] **7.1** `DeckAuthorWindow` scaffold (`Tools → Memory Foyer → Deck Author`)
 - [ ] **7.2** Deck list pane (ListView from `AssetDatabase.FindAssets`)
@@ -139,6 +142,6 @@ Tag: `v1.0`.
 
 ## Phase 10: Polish _(stretch)_
 
-- [ ] **10.1** DOTween animations (card flip, pedestal scale punch)
+- [ ] **10.1** DOTween animations (card flip, deck-button press feedback)
 - [ ] **10.2** Graphy in development builds only
 - [ ] **10.3** HDRI skybox from Polyhaven

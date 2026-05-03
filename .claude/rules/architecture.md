@@ -20,7 +20,7 @@ The principles below are the universal ones, with project-specific notes inline 
 ### Testability
 - All Domain code is pure C# (no MonoBehaviour, no UnityEngine) — testable directly via NUnit
 - Application code has no UnityEngine refs either; tests use fake implementations of Application interfaces
-- `IClock` and `IRandomProvider` are mandatory in scheduling/balance code — never call `DateTime.UtcNow` or `UnityEngine.Random` directly. SM-2 is time-sensitive; flakiness from real time is exactly the failure mode this rule prevents.
+- `IClock` is mandatory in scheduling/balance code — never call `DateTime.UtcNow` directly. SM-2 is time-sensitive; flakiness from real time is exactly the failure mode this rule prevents. Randomness is not behind an interface yet — add `IRandomProvider` only if a non-deterministic feature requires it.
 
 ### Configs over hardcoded values
 - Gameplay values (speeds, cooldowns, damage, timings) belong in configs (ScriptableObject or JSON)

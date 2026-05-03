@@ -20,9 +20,7 @@ Design scope and mechanics: see [docs/GDD.md](docs/GDD.md).
 
 ## Backend
 
-Node.js + Express in `server/`. **Target state (Roadmap Phase 3.5):** SQLite (via `better-sqlite3`) stores per-card `Sm2State`, server is authoritative for schedules, five endpoints, `zod` validation, idempotency via `sessionId`, OpenAPI 3.1 contract in `server/openapi.yaml`. Tests in `server/server.test.js` and `server/sm2.test.js`.
-
-**Current state:** skeleton — only `GET /health` is implemented, store is in-memory. Other endpoints (`GET /decks`, `GET /decks/:id/schedule`, `POST /sessions`, `GET /sessions/:id`), SQLite schema, server-side SM-2, and validation will land in Phase 3.5. See [docs/Roadmap.md](docs/Roadmap.md), [docs/GDD.md §8](docs/GDD.md), [server/README.md](server/README.md).
+Node.js + Express + SQLite (`better-sqlite3`) in `server/`. Authoritative for per-card `Sm2State`: server-side SM-2 runs on every `POST /sessions` and the response carries the full updated deck snapshot for atomic client cache overwrite. Five endpoints (`/health`, `/decks`, `/decks/:id/schedule`, `POST /sessions`, `GET /sessions/:id`), `zod` validation, idempotency via `sessionId` + `payload_hash`. Contract: [server/openapi.yaml](server/openapi.yaml). Run/curl/schema notes: [server/README.md](server/README.md). Tests in `server/server.test.js` and `server/sm2.test.js`.
 
 Run with `cd server && npm install && npm start`. Local-only by design — no cloud deployment, no multi-device sync.
 
@@ -36,7 +34,7 @@ docs/                   # All project documentation
   GDD.md                # Game design document — scope, mechanics, SM-2 rules
   Backlog.md            # Workflow: bugs / todos / ideas (managed via /backlog skills)
   Roadmap.md            # Workflow: project phases (managed via /roadmap skills)
-server/                 # Node.js + Express mock backend
+server/                 # Node.js + Express + SQLite authoritative backend
 Assets/
   Plugins/              # Third-party — DO NOT MODIFY
   Resources/Config/     # ScriptableObject configs loaded at runtime (e.g. ServerConfig.asset)
@@ -47,10 +45,9 @@ Assets/
     Infrastructure/     # I/O — HTTP client, ScriptableObject deck repo, analytics
     Presentation/       # Unity-facing — Foyer scene presenters, Review overlay
     Composition/        # VContainer LifetimeScopes (composition root)
-  Editor/               # Editor tools (Deck Author UI Toolkit window)
+  Editor/               # DeckExporter (export DeckAssets → server/decks.json); DeckAuthorWindow planned in Phase 7
   Tests/EditMode/       # Logic tests (NUnit)
   Resources/Decks/      # DeckAsset SOs (loaded via Resources.Load)
-  Prefabs/              # Pedestal.prefab etc.
   Settings/             # URP render pipeline settings
 Packages/
 ProjectSettings/

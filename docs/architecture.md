@@ -47,7 +47,7 @@ flowchart TB
 VContainer with two scopes:
 
 - **`ProjectLifetimeScope`** — long-lived, holds the SM-2 algorithm singleton, `IClock`, `ServerConfig`, `IDeckRepository`, `IHttpClient`, the `IScheduleStore` triple (`HttpScheduleStore` primary + `JsonFileScheduleCache` fallback wired through `CachingScheduleStore`), `IAnalyticsService`, `IReviewSessionService`. Lives in a persistent scene loaded via `DontDestroyOnLoad` (or via `parentReference` from the per-scene scope).
-- **`FoyerLifetimeScope`** — per-scene, registers `FoyerPresenter` and `ReviewPresenter` as `IAsyncStartable` entry points, plus the `PedestalView[]` and `ReviewView` MonoBehaviour references collected via `RegisterComponentInHierarchy<T>()` (or assigned through SerializeField on the scope itself).
+- **`FoyerLifetimeScope`** — per-scene, registers `FoyerPresenter` and `ReviewPresenter` as `IAsyncStartable` entry points, plus the `DeckSelectionView` (with its child `DeckButtonView[]`) and `ReviewView` MonoBehaviour references collected via `RegisterComponentInHierarchy<T>()` (or assigned through SerializeField on the scope itself).
 
 MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and brokers `SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`, `DeckSelectedEvent`. UI presenters subscribe via `ISubscriber<T>` and the session service publishes via `IPublisher<T>` — both injected by the container.
 
@@ -57,7 +57,7 @@ MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and bro
 - **Models are immutable records.** `Card`, `Deck`, `Sm2State` are `record` (or `readonly record struct` for IDs). Repositories hold mutable references; updates use `with`-expressions.
 - **DTOs live in Infrastructure.** Mapping between Domain types and DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`) happens in `Infrastructure/Dtos/ScheduleMappers.cs`. Domain doesn't know about JSON or HTTP.
 - **Server is authoritative for `Sm2State`.** Per-card schedules live in the SQLite database behind the API. Client uses `IScheduleStore` (Application interface); `HttpScheduleStore` is the primary implementation, `JsonFileScheduleCache` provides degraded offline read-back, and `CachingScheduleStore` orchestrates the two. URL and timeouts come from a `ServerConfig` record built from a `ServerConfigAsset` ScriptableObject — never hardcoded.
-- **Composition guards reentrancy.** `IReviewSessionService.StartAsync` throws `InvalidOperationException` if state is not `Idle` — protects against double-clicks on a pedestal.
+- **Composition guards reentrancy.** `IReviewSessionService.StartAsync` throws `InvalidOperationException` if state is not `Idle` — protects against double-clicks on a deck button.
 - **Strict nullable is per asmdef.** Each asmdef we own ships with a co-located `csc.rsp` enabling `-nullable:enable -warnaserror+:nullable`. The project-level `Assets/csc.rsp` is intentionally empty (Unity passes every line of it as a compiler argument and has no comment syntax — keep it zero bytes) so `Assembly-CSharp-firstpass` (third-party code under `Assets/Plugins/`) compiles with defaults. Adding a new asmdef without its `csc.rsp` means losing the third architectural enforcement (alongside layer separation and the `IClock` indirection).
 
 ## Contracts
@@ -149,7 +149,7 @@ record CardReviewedEvent      (Guid SessionId, CardId CardId, ReviewGrade Grade,
 record SessionFinishedEvent   (Guid SessionId, DeckId DeckId, int ReviewedCount, bool UploadedSuccessfully);
 ```
 
-Publishers: `ReviewSessionService` publishes `SessionStartedEvent` / `CardReviewedEvent` / `SessionFinishedEvent`; `FoyerPresenter` publishes `DeckSelectedEvent` on pedestal click. Subscribers: `ReviewPresenter` (all session events), `FoyerPresenter` (`SessionFinishedEvent` to refresh stats), `ConsoleAnalyticsService` (all four for telemetry).
+Publishers: `ReviewSessionService` publishes `SessionStartedEvent` / `CardReviewedEvent` / `SessionFinishedEvent`; `FoyerPresenter` publishes `DeckSelectedEvent` on deck button click. Subscribers: `ReviewPresenter` (all session events), `FoyerPresenter` (`SessionFinishedEvent` to refresh stats), `ConsoleAnalyticsService` (all four for telemetry).
 
 ## DI lifetimes
 
@@ -168,7 +168,7 @@ Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
 | `IReviewSessionService` → `ReviewSessionService` | Singleton | holds session state; reentrancy-guarded |
 | MessagePipe `IPublisher<T>` / `ISubscriber<T>` | Singleton | per the package's defaults |
 | `FoyerPresenter`, `ReviewPresenter` | Scoped (per-scene, in `FoyerLifetimeScope`) | `IAsyncStartable` entry points |
-| `PedestalView[]`, `ReviewView` | Scoped | `RegisterComponentInHierarchy<T>()` |
+| `DeckSelectionView`, `DeckButtonView[]`, `ReviewView` | Scoped | `RegisterComponentInHierarchy<T>()` |
 
 ## CachingScheduleStore — algorithm
 
@@ -214,7 +214,7 @@ The cache uses temp-file + atomic rename for both `Save` and `AppendPending`. Co
 
 **Online happy path** (3-card session on `capitals` deck):
 
-1. Player clicks Capitals pedestal → `FoyerPresenter` publishes `DeckSelectedEvent("capitals")`.
+1. Player clicks the Capitals deck button → `FoyerPresenter` publishes `DeckSelectedEvent("capitals")`.
 2. `ReviewPresenter` subscribes; calls `IReviewSessionService.StartAsync("capitals")`.
 3. `ReviewSessionService` transitions `Idle → Loading`, calls `IScheduleStore.GetDeckScheduleAsync("capitals")`.
 4. `CachingScheduleStore` → `HttpScheduleStore` → `GET /decks/capitals/schedule` → 200, schedule cached, returned with `Source=Server`.
@@ -223,7 +223,7 @@ The cache uses temp-file + atomic rename for both `Save` and `AppendPending`. Co
 7. Queue empty → `Playing → Uploading`. Service calls `IScheduleStore.UploadSessionAsync(result)`.
 8. `POST /sessions` → 200 with `updatedSchedule` (full deck). `CachingScheduleStore` removes pending, overwrites cache.
 9. `Uploading → Idle`. Publishes `SessionFinishedEvent(uploadedSuccessfully: true)`.
-10. `FoyerPresenter` re-fetches `GET /decks` to refresh pedestal counts.
+10. `FoyerPresenter` re-fetches `GET /decks` to refresh deck-button counts.
 
 **Offline → reconnect** (session completes offline, app reopens later):
 

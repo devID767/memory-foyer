@@ -21,7 +21,7 @@ _GIF and screenshots land in Phase 8._
 - DOTween — tweening
 - Cinemachine — camera
 - Unity Test Framework (NUnit) — EditMode tests
-- Node.js + Express — mock backend
+- Node.js + Express + SQLite — local authoritative backend
 
 ## Run
 
@@ -31,7 +31,7 @@ _GIF and screenshots land in Phase 8._
 2. Open this folder as a project; URP will import on first launch.
 3. Open `Assets/Scenes/Foyer.unity` and press Play.
 
-### Mock backend
+### Backend
 
 ```bash
 cd server
@@ -44,7 +44,7 @@ See [server/README.md](server/README.md).
 
 ## Architecture
 
-Layered, with `Domain` compiled without `UnityEngine` (`noEngineReferences: true` in the asmdef). Time and randomness flow through `IClock` and `IRandomProvider` so the SM-2 algorithm is unit-testable in pure C#.
+Layered, with `Domain` compiled without `UnityEngine` (`noEngineReferences: true` in the asmdef). Time flows through `IClock` so the SM-2 algorithm is unit-testable in pure C#.
 
 Full reference: [docs/architecture.md](docs/architecture.md).
 

@@ -21,7 +21,7 @@ It is built as a portfolio piece: the visible game is intentionally small so the
 - **Craft signal.** 100% test coverage of `Domain`, 0 compiler warnings, no engine references in `Domain`, all DI registrations in `Composition`, no third-party plugin modifications.
 - **Visible artifact.** Public repo with a readable README, a 30-second demo video, and a screenshot suitable for HH/LinkedIn.
 
-**Non-goals for v1:** retention mechanics, multi-user, mobile/web, persistence beyond mock backend, real analytics, custom shaders, particle systems.
+**Non-goals for v1:** retention mechanics, multi-user, mobile/web, persistence beyond the local authoritative backend, real analytics, custom shaders, particle systems.
 
 ## 3. Core Loop
 
@@ -135,7 +135,7 @@ After working through the relearning queue (per §4.3), the card graduates back 
 - A card graded **Again** is re-queued at the **physical end of the current in-memory queue** in addition to its scheduled `DueAt`. Concretely: after the current grade is recorded, if the queue is `[c2, c3]` and we just graded `c1` as Again, the queue becomes `[c2, c3, c1]`. If `c1` is graded Again again, it goes to the end once more; SM-2 is applied each time. There is no per-session cap.
 - Session ends when the queue is empty or the player presses Esc.
 - On end, a `SessionResultDto` is sent: `{ sessionId, deckId, reviews: [{ cardId, grade, reviewedAt }, ...] }`. `sessionId` is a client-generated GUID set when the session starts. The server uses it to dedup retries (see §8 idempotency).
-- **Persistence timing:** the in-memory list of completed reviews is appended to a pending-uploads file (`JsonFileScheduleCache`) atomically (temp file + rename) **after every grade**. So a process crash mid-session loses at most the last grade. On `EndAsync` the pending session is uploaded; on success it is removed from the file.
+- **Persistence timing:** during a session the list of completed reviews lives only in memory. At the start of the upload phase (queue empty or Esc) the full session is appended atomically (temp file + rename) to the pending-uploads file (`JsonFileScheduleCache`), then `POST /sessions` is attempted; on success the pending entry is removed. A process crash before the upload phase drops the in-flight session — see §15.
 - **Quit mid-session:** results so far are uploaded silently — no confirm dialog, no "discard" path.
 
 ## 6. Scenes & UI
@@ -188,7 +188,7 @@ Decks are `ScriptableObject` assets under `Assets/Resources/Decks/`.
 2. **Periodic Table 1–20** — 20 cards, `NewCardsPerDay = 5`
 3. **English Idioms** — 30 cards, `NewCardsPerDay = 8`
 
-Authoring is via a custom Editor window (`Editor/DeckAuthor/DeckAuthorWindow.cs`, UI Toolkit). CSV import is a Phase 7 stretch.
+Currently decks are authored by editing `DeckAsset` directly in the Inspector (fields exposed via `[SerializeField]`); changes are pushed to the server through the **Deck Exporter** (`Tools → Memory Foyer → Export Decks`, `Assets/Editor/DeckExporter.cs`), which writes `server/decks.json`. A full `DeckAuthorWindow` (UI Toolkit) with CSV import is a Phase 7 task.
 
 ## 8. Backend
 
@@ -221,8 +221,8 @@ Node.js + Express in `server/`. SQLite (`better-sqlite3`) is the system of recor
 | `EaseFactor` (float) | `easeFactor` | rounded to 4 decimal places on serialize |
 | `IntervalDays` (int) | `intervalDays` | identical |
 | `DueAt` (DateTime, UTC) | `dueAt` | ISO 8601 with `Z` suffix |
-| `LearningStage` (enum) | `stage` | `"new"` / `"learning"` / `"review"` (lowercase string) |
-| `LearningStepIndex` (int) | `learningStep` | absent (`undefined`) when `stage == "review"`; `0` or `1` when `stage == "learning"` |
+| `LearningStage` (enum) | `stage` | `"new"` / `"learning"` / `"review"` / `"relearning"` (lowercase string) |
+| `LearningStepIndex` (int) | `learningStep` | always present; `0` when `stage ∈ {"new", "review"}`; `0` or `1` when `stage ∈ {"learning", "relearning"}` |
 
 The Unity client reaches the server through `IScheduleStore` (Application). `HttpScheduleStore` is the primary implementation backed by `UnityWebRequestHttpClient`+UniTask; `JsonFileScheduleCache` provides degraded offline read-back; `CachingScheduleStore` orchestrates them. Tests in `server/sm2.test.js` (algorithm) and `server/server.test.js` (endpoints, idempotency, validation).
 
@@ -327,7 +327,7 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 | VContainer / UniTask / MessagePipe version conflicts on Unity 6 | Low | High | Pin versions in `manifest.json`; verify in Phase 0 before any logic code. |
 | Soft-lapse + learning-steps add complexity → tests blow out | Medium | Medium | Algorithm under `Domain/`; if Phase 1 (algorithm) > 4 h, drop learning steps and document. |
 | URP post-FX makes backdrop look "off" on Windows | Low | Medium | Use only stock Volume profiles; no custom render passes. |
-| Server SQLite file corrupts | Low | Low | File ignored in git; on open failure server logs and re-initializes from `schema.sql` + `seed.js`. |
+| Server SQLite file corrupts | Low | Low | File ignored in git; on open failure server logs and re-initializes from `schema.sql` + `decks.json`. |
 
 ## 15. Limitations (Honest)
 
@@ -336,7 +336,7 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 - **Offline is degraded, not full.** With a populated cache the client can start a session and queue uploads (idempotent on `sessionId`). First-run without server = empty UI. Long offline = the cached `dueAt` values drift behind reality (no schedules accumulate without round-trips).
 - **Reconnect order:** when the client comes back online with both pending uploads and a stale cache, `CachingScheduleStore` first drains the pending-uploads queue (one `POST /sessions` per session in FIFO order, idempotent), then performs a fresh `GET /decks/:id/schedule` and overwrites the cache. This guarantees the schedule the user sees reflects all locally-completed work.
 - **No retention mechanics.** No notifications, streaks, goals — by design. The app is a tool, not a service.
-- **Three fixed decks.** Adding a fourth requires authoring a `DeckAsset` + adding the deck row to `server/seed.js`.
+- **Three fixed decks.** Adding a fourth requires authoring a `DeckAsset` and re-running the Deck Exporter (`Tools → Memory Foyer → Export Decks`) to refresh `server/decks.json`.
 - **No localization.** UI is English-only.
 - **Mid-session hard-crash before upload loses pending grades in the queue.** `CachingScheduleStore` keeps pending uploads on disk in `JsonFileScheduleCache`, so a normal app close survives. A process crash before flush may drop the in-flight session. Acceptable for the portfolio; production would need a write-ahead log.
 
