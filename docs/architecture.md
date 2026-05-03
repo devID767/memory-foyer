@@ -162,8 +162,9 @@ Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
 | `IDeckRepository` → `ScriptableObjectDeckRepository` | Singleton | reads `DeckAsset` once, caches |
 | `IHttpClient` → `UnityWebRequestHttpClient` | Singleton | one long-lived instance |
 | `ServerConfig` | Singleton (instance) | built from `ServerConfigAsset` at scope setup |
-| `IScheduleStore` → `CachingScheduleStore` | Singleton | composite holds `HttpScheduleStore` + `JsonFileScheduleCache` |
-| `HttpScheduleStore`, `JsonFileScheduleCache` | Singleton (concrete) | injected into `CachingScheduleStore` |
+| `IScheduleStore` → `CachingScheduleStore` | Singleton | composite; takes `IScheduleStore` (HTTP) + `IScheduleCache` (file) in constructor |
+| `IScheduleStore` → `HttpScheduleStore` (named/inner) | Singleton | wraps `IHttpClient`, surfaces `ScheduleStoreUnavailableException` / `ScheduleStoreContractException` |
+| `IScheduleCache` → `JsonFileScheduleCache` | Singleton | offline schedule read-back + pending-upload queue, atomic temp+rename writes |
 | `IAnalyticsService` → `ConsoleAnalyticsService` (dev) / `NoOpAnalyticsService` (release) | Singleton | conditional registration |
 | `IReviewSessionService` → `ReviewSessionService` | Singleton | holds session state; reentrancy-guarded |
 | MessagePipe `IPublisher<T>` / `ISubscriber<T>` | Singleton | per the package's defaults |
@@ -206,9 +207,9 @@ DrainPendingAsync():                        // called on reconnect / app start
 
 The cache uses temp-file + atomic rename for both `Save` and `AppendPending`. Corrupt JSON on read → log + treat as missing (start with empty cache for that deck).
 
-## NewCardBudget counter
+## New-card budget enforcement
 
-`NewCardBudget` (Application) is **not stateful** on the client. The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/schedule` by selecting at most `NewCardsPerDay` `Stage=New` cards whose first appearance falls in the current UTC day. The client trusts that filter. `NewCardBudget` exists as an Application-side value object only to expose the cap value to UI ("`{N} new today`" copy, if added later) and to validate `DeckAsset` authoring data.
+The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/schedule` by selecting at most `NewCardsPerDay` `Stage=New` cards (see [server/README.md known limitations](../server/README.md) for the current per-fetch implementation and Backlog T-1 for the per-UTC-day target). The client trusts that filter and does not re-cap. No Application-side budget value object exists today; if "`{N} new today`" UI copy is added later, the cap can be read from `DeckAsset.NewCardsPerDay` directly.
 
 ## Data-flow walkthroughs
 

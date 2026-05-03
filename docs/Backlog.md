@@ -16,6 +16,8 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
       across two consecutive `GET /decks/:id/schedule` within the same UTC day; second test
       proving leftover from yesterday surfaces today plus today's fresh cards (≤ `new_cards_per_day` new).
 
+- [ ] **T-2** (2026-05-04) Eliminate openapi.yaml ↔ zod schema duplication via `zod-to-openapi`. Currently `server/openapi.yaml` and `server/schemas.js` describe the same DTOs (CardReview, SessionResult, etc.) in parallel and can drift silently. Generate the OpenAPI spec from zod schemas as single source of truth; keep `openapi.yaml` as a generated artifact.
+
 ## Bugs
 <!-- next ID: B-1 -->
 

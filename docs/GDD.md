@@ -278,11 +278,10 @@ A cross-reference between mechanics in this document and the layer that owns the
 | Concern | Layer | Owning file |
 |---|---|---|
 | SM-2 algorithm (pure function) | Domain | `Domain/Scheduling/Sm2Algorithm.cs` |
-| `Card`, `Deck`, `Sm2State` records | Domain | `Domain/Models/Card.cs`, `Deck.cs`, `Domain/Scheduling/Sm2State.cs` |
+| `Card`, `Deck`, `Sm2State` records | Domain | `Domain/Models/Card.cs`, `Deck.cs`, `Domain/Models/Sm2State.cs` |
 | `ReviewGrade` enum | Domain | `Domain/Scheduling/ReviewGrade.cs` |
 | `IClock` | Domain | `Domain/Time/IClock.cs` |
 | Session orchestration / state machine | Application | `Application/Sessions/ReviewSessionService.cs` |
-| New-cards-per-day budget logic | Application | `Application/Sessions/NewCardBudget.cs` |
 | `SessionResult` / `CardReview` records | Application | `Application/Persistence/SessionResult.cs` |
 | `IScheduleStore` interface | Application | `Application/Persistence/IScheduleStore.cs` |
 | `CachingScheduleStore` (HTTP+cache composite) | Application | `Application/Persistence/CachingScheduleStore.cs` |
@@ -292,7 +291,7 @@ A cross-reference between mechanics in this document and the layer that owns the
 | `HttpScheduleStore` (primary `IScheduleStore`) | Infrastructure | `Infrastructure/Persistence/HttpScheduleStore.cs` |
 | `JsonFileScheduleCache` (offline fallback) | Infrastructure | `Infrastructure/Persistence/JsonFileScheduleCache.cs` |
 | Schedule DTOs + mappers | Infrastructure | `Infrastructure/Dtos/*.cs`, `ScheduleMappers.cs` |
-| `ServerConfigAsset` ScriptableObject | Infrastructure | `Infrastructure/Configuration/ServerConfigAsset.cs` |
+| `ServerConfigAsset` ScriptableObject | Infrastructure | `Infrastructure/ScriptableObjects/ServerConfigAsset.cs` |
 | `DeckAsset` + ScriptableObject deck loading | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` |
 | `DeckAsset` → Domain `Deck` mapping | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` (private mapper, no separate file) |
 | Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerView.cs` |

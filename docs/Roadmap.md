@@ -74,7 +74,7 @@ May proceed in parallel with Phase 1 — no shared files with the Unity client.
 
 - [x] **3.5.1** `server/package.json` + deps (`express`, `better-sqlite3`, `zod`; dev: `vitest` or `node:test`) _(2026-05-03)_
 - [x] **3.5.2** `server/schema.sql` + migration loader in `server.js` _(2026-05-03)_
-- [x] **3.5.3** `server/seed.js` — three decks from GDD §7 _(2026-05-03)_
+- [x] **3.5.3** ~~`server/seed.js`~~ — dropped 2026-05-04 in commit `7f9b3fe`; seeding replaced by `server/decks.json` (see 3.5.12) _(2026-05-03 → dropped)_
 - [x] **3.5.4** `server/sm2.js` (port of GDD §4) + `server/sm2.test.js` _(2026-05-03)_
 - [x] **3.5.5** `server/server.js` — Express scaffold, `zod` validation, error middleware _(2026-05-03)_
 - [x] **3.5.6** `GET /health`, `GET /decks`, `GET /decks/:id/schedule` _(2026-05-03)_
