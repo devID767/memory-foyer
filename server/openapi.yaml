@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: Memory Foyer Backend
+  version: 0.3.5
+  description: |
+    Local-only authoritative backend for the Memory Foyer Unity client.
+    Stores per-card SM-2 state in SQLite, runs server-side SM-2 on every
+    POST /sessions, returns the full deck snapshot for atomic client cache
+    overwrite. See docs/GDD.md §8 for the contract rationale.
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        '200':
+          description: Server is up
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+
+  /decks:
+    get:
+      summary: List decks with aggregated counts
+      responses:
+        '200':
+          description: Deck summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeckSummary' }
+
+  /decks/{id}/schedule:
+    get:
+      summary: Per-card schedule (filtered by new-card cap)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deck schedule
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeckSchedule' }
+        '404':
+          description: Unknown deck
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /sessions:
+    post:
+      summary: Submit a completed session; runs server-side SM-2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SessionResult' }
+      responses:
+        '200':
+          description: Session processed (or deduped)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionUploadResponse' }
+        '400':
+          description: Validation or unknown-card error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Same sessionId with conflicting payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /sessions/{id}:
+    get:
+      summary: Fetch a previously processed session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Session record
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProcessedSession' }
+        '404':
+          description: Unknown session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { type: string, enum: [ok] }
+        version: { type: string }
+
+    DeckSummary:
+      type: object
+      required: [deckId, displayName, dueCount, newCount, totalCount]
+      properties:
+        deckId: { type: string }
+        displayName: { type: string }
+        dueCount: { type: integer, minimum: 0 }
+        newCount: { type: integer, minimum: 0 }
+        totalCount: { type: integer, minimum: 0 }
+
+    CardSchedule:
+      type: object
+      required: [cardId, reps, easeFactor, intervalDays, dueAt, stage, learningStep]
+      properties:
+        cardId: { type: string }
+        reps: { type: integer, minimum: 0 }
+        easeFactor: { type: number, minimum: 1.3 }
+        intervalDays: { type: integer, minimum: 0, maximum: 365 }
+        dueAt: { type: string, format: date-time }
+        stage: { type: string, enum: [new, learning, review] }
+        learningStep: { type: integer, enum: [0, 1] }
+
+    DeckSchedule:
+      type: object
+      required: [deckId, cards]
+      properties:
+        deckId: { type: string }
+        cards:
+          type: array
+          items: { $ref: '#/components/schemas/CardSchedule' }
+
+    CardReview:
+      type: object
+      required: [cardId, grade, reviewedAt]
+      properties:
+        cardId: { type: string }
+        grade: { type: integer, enum: [0, 3, 4, 5] }
+        reviewedAt: { type: string, format: date-time }
+
+    SessionResult:
+      type: object
+      required: [sessionId, deckId, reviews]
+      properties:
+        sessionId: { type: string, format: uuid }
+        deckId: { type: string }
+        reviews:
+          type: array
+          items: { $ref: '#/components/schemas/CardReview' }
+
+    SessionUploadResponse:
+      type: object
+      required: [ok, updatedSchedule]
+      properties:
+        ok: { type: boolean }
+        dedup: { type: boolean }
+        updatedSchedule: { $ref: '#/components/schemas/DeckSchedule' }
+
+    ProcessedSession:
+      type: object
+      required: [sessionId, deckId, processedAt, reviews]
+      properties:
+        sessionId: { type: string, format: uuid }
+        deckId: { type: string }
+        processedAt: { type: string, format: date-time }
+        reviews:
+          type: array
+          items: { $ref: '#/components/schemas/CardReview' }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        details:
+          type: array
+          items: { type: object }
+        cardId: { type: string }
+        deckId: { type: string }
+        sessionId: { type: string }
