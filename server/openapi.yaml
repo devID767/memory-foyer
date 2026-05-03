@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Memory Foyer Backend
-  version: 0.3.5
+  version: 0.4.0
   description: |
     Local-only authoritative backend for the Memory Foyer Unity client.
     Stores per-card SM-2 state in SQLite, runs server-side SM-2 on every
@@ -126,7 +126,7 @@ components:
         easeFactor: { type: number, minimum: 1.3 }
         intervalDays: { type: integer, minimum: 0, maximum: 365 }
         dueAt: { type: string, format: date-time }
-        stage: { type: string, enum: [new, learning, review] }
+        stage: { type: string, enum: [new, learning, review, relearning] }
         learningStep: { type: integer, enum: [0, 1] }
 
     DeckSchedule:

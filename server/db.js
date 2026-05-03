@@ -29,10 +29,21 @@ function initialize(db) {
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     db.exec(schemaSql);
+    migrate(db);
 
     const deckCount = db.prepare('SELECT COUNT(*) AS n FROM decks').get().n;
     if (deckCount === 0) {
         seed(db);
     }
     return db;
+}
+
+export function migrate(db) {
+    const version = db.pragma('user_version', { simple: true });
+    if (version < 1) {
+        // Pre-relearning rows used the 'reps > 0' heuristic to encode collapsed Relearning.
+        // Retag those rows so the new four-stage model is consistent.
+        db.exec(`UPDATE card_schedules SET stage='relearning' WHERE stage='learning' AND reps > 0;`);
+        db.pragma('user_version = 1');
+    }
 }

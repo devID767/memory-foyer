@@ -66,10 +66,10 @@ test('review reps=2 + Good → reps=3, interval=round(6*2.5)=15', () => {
     assert.equal(r.intervalDays, 15);
 });
 
-test('review + Again from long interval → collapsed-relearning, reps preserved, EF-=0.20', () => {
+test('review + Again from long interval → relearning, reps preserved, EF-=0.20', () => {
     const s = { reps: 5, easeFactor: 2.5, intervalDays: 60, dueAt: T0, stage: 'review', learningStep: 0 };
     const r = schedule(s, 0, T0);
-    assert.equal(r.stage, 'learning');
+    assert.equal(r.stage, 'relearning');
     assert.equal(r.learningStep, 0);
     assert.equal(r.reps, 5);
     assert.equal(r.intervalDays, 30);
@@ -77,12 +77,27 @@ test('review + Again from long interval → collapsed-relearning, reps preserved
     assert.equal(r.dueAt.getTime() - T0.getTime(), 10 * 60 * 1000);
 });
 
-test('collapsed-relearning step 1 + Good → graduate preserves reps', () => {
-    // After previous test pattern: reps=5, stage=learning, step=1.
-    const s = { reps: 5, easeFactor: 2.30, intervalDays: 30, dueAt: T0, stage: 'learning', learningStep: 1 };
+test('relearning step 0 + Good → step 1, stage stays relearning', () => {
+    const s = { reps: 5, easeFactor: 2.30, intervalDays: 30, dueAt: T0, stage: 'relearning', learningStep: 0 };
+    const r = schedule(s, 4, T0);
+    assert.equal(r.stage, 'relearning');
+    assert.equal(r.learningStep, 1);
+    assert.equal(r.reps, 5);
+});
+
+test('relearning step 1 + Good → graduate preserves reps', () => {
+    const s = { reps: 5, easeFactor: 2.30, intervalDays: 30, dueAt: T0, stage: 'relearning', learningStep: 1 };
     const r = schedule(s, 4, T0);
     assert.equal(r.stage, 'review');
     assert.equal(r.reps, 5);
+    assert.equal(r.intervalDays, 1);
+});
+
+test('learning step 1 + Good after fresh learning → graduate resets reps to 1', () => {
+    const s = { reps: 0, easeFactor: 2.5, intervalDays: 0, dueAt: T0, stage: 'learning', learningStep: 1 };
+    const r = schedule(s, 4, T0);
+    assert.equal(r.stage, 'review');
+    assert.equal(r.reps, 1);
     assert.equal(r.intervalDays, 1);
 });
 

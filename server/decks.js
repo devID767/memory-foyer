@@ -16,7 +16,7 @@ export function createDecksRouter({ db, now }) {
         const dueLearningReviewStmt = db.prepare(
             `SELECT COUNT(*) AS n FROM card_schedules cs
              JOIN cards c ON c.card_id = cs.card_id
-             WHERE c.deck_id = ? AND cs.stage IN ('learning','review') AND cs.due_at <= ?`
+             WHERE c.deck_id = ? AND cs.stage IN ('learning','review','relearning') AND cs.due_at <= ?`
         );
 
         const result = decks.map((d) => {
@@ -46,7 +46,7 @@ export function createDecksRouter({ db, now }) {
         const learningReview = db.prepare(
             `SELECT cs.* FROM card_schedules cs
              JOIN cards c ON c.card_id = cs.card_id
-             WHERE c.deck_id = ? AND cs.stage IN ('learning','review')
+             WHERE c.deck_id = ? AND cs.stage IN ('learning','review','relearning')
              ORDER BY c.ord ASC`
         ).all(deckId);
 
