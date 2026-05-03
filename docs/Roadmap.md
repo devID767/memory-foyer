@@ -60,11 +60,11 @@ Tag: `v0.2-application`.
 - [x] **3.2** Domain ↔ DTO mappers (`Infrastructure/Dtos/ScheduleMappers.cs`) _(2026-05-03)_
 - [x] **3.3** `IHttpClient` (Application) + `UnityWebRequestHttpClient` (Infrastructure) _(2026-05-03)_
 - [x] **3.4** `HttpScheduleStore` (`Infrastructure/Persistence/`) _(2026-05-03)_
-- [ ] **3.5** `JsonFileScheduleCache` (`Infrastructure/Persistence/`, `Application.persistentDataPath`)
-- [ ] **3.6** `ServerConfigAsset` ScriptableObject + `Assets/Resources/Config/ServerConfig.asset`
-- [ ] **3.7** `DeckAsset` + `ScriptableObjectDeckRepository`
-- [ ] **3.8** `ConsoleAnalyticsService`, `NoOpAnalyticsService`
-- [ ] **3.9** Mapper tests (~6 cases)
+- [x] **3.5** `JsonFileScheduleCache` (`Infrastructure/Persistence/`, `Application.persistentDataPath`) _(2026-05-03)_
+- [x] **3.6** `ServerConfigAsset` ScriptableObject _(2026-05-03)_
+- [x] **3.7** `DeckAsset` + `ScriptableObjectDeckRepository` _(2026-05-03)_
+- [x] **3.8** `ConsoleAnalyticsService`, `NoOpAnalyticsService` _(2026-05-03)_
+- [x] **3.9** Mapper tests (8 cases) _(2026-05-03)_
 
 Tag: `v0.3-infrastructure`.
 

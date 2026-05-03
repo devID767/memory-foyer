@@ -1,7 +1,7 @@
 {
     "name": "MemoryFoyer.Tests.EditMode",
     "rootNamespace": "MemoryFoyer.Tests.EditMode",
-    "references": ["MemoryFoyer.Domain", "MemoryFoyer.Application", "UniTask", "MessagePipe"],
+    "references": ["MemoryFoyer.Domain", "MemoryFoyer.Application", "MemoryFoyer.Infrastructure", "UniTask", "MessagePipe"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

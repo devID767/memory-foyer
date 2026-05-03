@@ -103,6 +103,42 @@ namespace MemoryFoyer.Infrastructure.Dtos
             };
         }
 
+        public static SessionResult FromDto(SessionResultDto dto)
+        {
+            if (!Guid.TryParse(dto.sessionId, out Guid sessionId))
+            {
+                throw new FormatException($"Invalid sessionId GUID: '{dto.sessionId}'.");
+            }
+
+            CardReviewDto[] reviewDtos = dto.reviews;
+            List<CardReview> reviews = new List<CardReview>(reviewDtos.Length);
+            foreach (CardReviewDto reviewDto in reviewDtos)
+            {
+                reviews.Add(FromDto(reviewDto));
+            }
+
+            return new SessionResult(
+                SessionId: sessionId,
+                DeckId: new DeckId(dto.deckId),
+                Reviews: reviews);
+        }
+
+        public static CardReview FromDto(CardReviewDto dto)
+        {
+            if (dto.grade != 0 && dto.grade != 3 && dto.grade != 4 && dto.grade != 5)
+            {
+                throw new FormatException($"Invalid grade value: {dto.grade}. Expected one of {{0, 3, 4, 5}}.");
+            }
+
+            ReviewGrade grade = (ReviewGrade)dto.grade;
+            DateTime reviewedAt = DateTime.Parse(
+                dto.reviewedAt,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+            return new CardReview(new CardId(dto.cardId), grade, reviewedAt);
+        }
+
         // ── Stage wire helpers ────────────────────────────────────────────────
 
         /// <summary>
