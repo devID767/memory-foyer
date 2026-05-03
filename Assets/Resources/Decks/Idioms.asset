@@ -14,6 +14,96 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
   _deckId: idioms
   _displayName: English Idioms
-  _description: 
+  _description: 30 common English idioms and their meanings.
   _newCardsPerDay: 8
-  _cards: []
+  _cards:
+  - _cardId: idioms:1
+    _front: Break the ice
+    _back: Initiate conversation in a social setting
+  - _cardId: idioms:2
+    _front: Hit the books
+    _back: Study hard
+  - _cardId: idioms:3
+    _front: Bite the bullet
+    _back: Endure something painful or unpleasant
+  - _cardId: idioms:4
+    _front: Piece of cake
+    _back: Something very easy
+  - _cardId: idioms:5
+    _front: Under the weather
+    _back: Feeling ill
+  - _cardId: idioms:6
+    _front: Cost an arm and a leg
+    _back: Be very expensive
+  - _cardId: idioms:7
+    _front: Spill the beans
+    _back: Reveal a secret
+  - _cardId: idioms:8
+    _front: Once in a blue moon
+    _back: Very rarely
+  - _cardId: idioms:9
+    _front: Let the cat out of the bag
+    _back: Disclose a secret unintentionally
+  - _cardId: idioms:10
+    _front: Burn the midnight oil
+    _back: Work late into the night
+  - _cardId: idioms:11
+    _front: Cut corners
+    _back: Do something poorly to save time or money
+  - _cardId: idioms:12
+    _front: Hit the nail on the head
+    _back: Describe a situation exactly
+  - _cardId: idioms:13
+    _front: Pull someone’s leg
+    _back: Tease or joke with someone
+  - _cardId: idioms:14
+    _front: The best of both worlds
+    _back: Enjoy two different opportunities at once
+  - _cardId: idioms:15
+    _front: Speak of the devil
+    _back: The person we were just discussing has appeared
+  - _cardId: idioms:16
+    _front: When pigs fly
+    _back: Something that will never happen
+  - _cardId: idioms:17
+    _front: Add insult to injury
+    _back: Make a bad situation worse
+  - _cardId: idioms:18
+    _front: Beat around the bush
+    _back: Avoid the main topic
+  - _cardId: idioms:19
+    _front: Call it a day
+    _back: Stop working on something
+  - _cardId: idioms:20
+    _front: Get out of hand
+    _back: Become uncontrollable
+  - _cardId: idioms:21
+    _front: Go the extra mile
+    _back: Do more than is expected
+  - _cardId: idioms:22
+    _front: Miss the boat
+    _back: Lose an opportunity
+  - _cardId: idioms:23
+    _front: "No pain, no gain"
+    _back: Effort is required to achieve results
+  - _cardId: idioms:24
+    _front: On the ball
+    _back: Alert and competent
+  - _cardId: idioms:25
+    _front: Pull yourself together
+    _back: Calm down and regain composure
+  - _cardId: idioms:26
+    _front: So far so good
+    _back: Things are going well so far
+  - _cardId: idioms:27
+    _front: Take it with a grain of salt
+    _back: Treat a claim skeptically
+  - _cardId: idioms:28
+    _front: The ball is in your court
+    _back: It is your decision now
+  - _cardId: idioms:29
+    _front: Through thick and thin
+    _back: In good times and bad
+  - _cardId: idioms:30
+    _front: Time flies
+    _back: Time passes quickly

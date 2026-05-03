@@ -14,6 +14,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
   _deckId: periodic
   _displayName: Periodic Table 1-20
-  _description: 
+  _description: The first 20 chemical elements by atomic number.
   _newCardsPerDay: 5
-  _cards: []
+  _cards:
+  - _cardId: periodic:1
+    _front: "1"
+    _back: Hydrogen (H)
+  - _cardId: periodic:2
+    _front: "2"
+    _back: Helium (He)
+  - _cardId: periodic:3
+    _front: "3"
+    _back: Lithium (Li)
+  - _cardId: periodic:4
+    _front: "4"
+    _back: Beryllium (Be)
+  - _cardId: periodic:5
+    _front: "5"
+    _back: Boron (B)
+  - _cardId: periodic:6
+    _front: "6"
+    _back: Carbon (C)
+  - _cardId: periodic:7
+    _front: "7"
+    _back: Nitrogen (N)
+  - _cardId: periodic:8
+    _front: "8"
+    _back: Oxygen (O)
+  - _cardId: periodic:9
+    _front: "9"
+    _back: Fluorine (F)
+  - _cardId: periodic:10
+    _front: "10"
+    _back: Neon (Ne)
+  - _cardId: periodic:11
+    _front: "11"
+    _back: Sodium (Na)
+  - _cardId: periodic:12
+    _front: "12"
+    _back: Magnesium (Mg)
+  - _cardId: periodic:13
+    _front: "13"
+    _back: Aluminium (Al)
+  - _cardId: periodic:14
+    _front: "14"
+    _back: Silicon (Si)
+  - _cardId: periodic:15
+    _front: "15"
+    _back: Phosphorus (P)
+  - _cardId: periodic:16
+    _front: "16"
+    _back: Sulfur (S)
+  - _cardId: periodic:17
+    _front: "17"
+    _back: Chlorine (Cl)
+  - _cardId: periodic:18
+    _front: "18"
+    _back: Argon (Ar)
+  - _cardId: periodic:19
+    _front: "19"
+    _back: Potassium (K)
+  - _cardId: periodic:20
+    _front: "20"
+    _back: Calcium (Ca)

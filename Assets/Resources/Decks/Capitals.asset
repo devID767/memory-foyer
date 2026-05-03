@@ -14,6 +14,138 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
   _deckId: capitals
   _displayName: Capitals of Europe
-  _description: 
+  _description: 44 European countries and their capital cities.
   _newCardsPerDay: 10
-  _cards: []
+  _cards:
+  - _cardId: capitals:1
+    _front: Austria
+    _back: Vienna
+  - _cardId: capitals:2
+    _front: Belgium
+    _back: Brussels
+  - _cardId: capitals:3
+    _front: Bulgaria
+    _back: Sofia
+  - _cardId: capitals:4
+    _front: Croatia
+    _back: Zagreb
+  - _cardId: capitals:5
+    _front: Cyprus
+    _back: Nicosia
+  - _cardId: capitals:6
+    _front: Czechia
+    _back: Prague
+  - _cardId: capitals:7
+    _front: Denmark
+    _back: Copenhagen
+  - _cardId: capitals:8
+    _front: Estonia
+    _back: Tallinn
+  - _cardId: capitals:9
+    _front: Finland
+    _back: Helsinki
+  - _cardId: capitals:10
+    _front: France
+    _back: Paris
+  - _cardId: capitals:11
+    _front: Germany
+    _back: Berlin
+  - _cardId: capitals:12
+    _front: Greece
+    _back: Athens
+  - _cardId: capitals:13
+    _front: Hungary
+    _back: Budapest
+  - _cardId: capitals:14
+    _front: Ireland
+    _back: Dublin
+  - _cardId: capitals:15
+    _front: Italy
+    _back: Rome
+  - _cardId: capitals:16
+    _front: Latvia
+    _back: Riga
+  - _cardId: capitals:17
+    _front: Lithuania
+    _back: Vilnius
+  - _cardId: capitals:18
+    _front: Luxembourg
+    _back: Luxembourg City
+  - _cardId: capitals:19
+    _front: Malta
+    _back: Valletta
+  - _cardId: capitals:20
+    _front: Netherlands
+    _back: Amsterdam
+  - _cardId: capitals:21
+    _front: Poland
+    _back: Warsaw
+  - _cardId: capitals:22
+    _front: Portugal
+    _back: Lisbon
+  - _cardId: capitals:23
+    _front: Romania
+    _back: Bucharest
+  - _cardId: capitals:24
+    _front: Slovakia
+    _back: Bratislava
+  - _cardId: capitals:25
+    _front: Slovenia
+    _back: Ljubljana
+  - _cardId: capitals:26
+    _front: Spain
+    _back: Madrid
+  - _cardId: capitals:27
+    _front: Sweden
+    _back: Stockholm
+  - _cardId: capitals:28
+    _front: United Kingdom
+    _back: London
+  - _cardId: capitals:29
+    _front: Norway
+    _back: Oslo
+  - _cardId: capitals:30
+    _front: Switzerland
+    _back: Bern
+  - _cardId: capitals:31
+    _front: Iceland
+    _back: Reykjavik
+  - _cardId: capitals:32
+    _front: Albania
+    _back: Tirana
+  - _cardId: capitals:33
+    _front: Andorra
+    _back: Andorra la Vella
+  - _cardId: capitals:34
+    _front: Belarus
+    _back: Minsk
+  - _cardId: capitals:35
+    _front: Bosnia and Herzegovina
+    _back: Sarajevo
+  - _cardId: capitals:36
+    _front: Liechtenstein
+    _back: Vaduz
+  - _cardId: capitals:37
+    _front: Moldova
+    _back: Chișinău
+  - _cardId: capitals:38
+    _front: Monaco
+    _back: Monaco
+  - _cardId: capitals:39
+    _front: Montenegro
+    _back: Podgorica
+  - _cardId: capitals:40
+    _front: North Macedonia
+    _back: Skopje
+  - _cardId: capitals:41
+    _front: San Marino
+    _back: San Marino
+  - _cardId: capitals:42
+    _front: Serbia
+    _back: Belgrade
+  - _cardId: capitals:43
+    _front: Ukraine
+    _back: Kyiv
+  - _cardId: capitals:44
+    _front: Vatican City
+    _back: Vatican City
