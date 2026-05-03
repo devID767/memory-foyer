@@ -72,17 +72,17 @@ Tag: `v0.3-infrastructure`.
 
 May proceed in parallel with Phase 1 — no shared files with the Unity client.
 
-- [ ] **3.5.1** `server/package.json` + deps (`express`, `better-sqlite3`, `zod`; dev: `vitest` or `node:test`)
-- [ ] **3.5.2** `server/schema.sql` + migration loader in `server.js`
-- [ ] **3.5.3** `server/seed.js` — three decks from GDD §7
-- [ ] **3.5.4** `server/sm2.js` (port of GDD §4) + `server/sm2.test.js`
-- [ ] **3.5.5** `server/server.js` — Express scaffold, `zod` validation, error middleware
-- [ ] **3.5.6** `GET /health`, `GET /decks`, `GET /decks/:id/schedule`
-- [ ] **3.5.7** `POST /sessions` (server-side SM-2 + idempotency on `sessionId`)
-- [ ] **3.5.8** `GET /sessions/:id`
-- [ ] **3.5.9** `server/server.test.js` — integration tests (~7 cases)
-- [ ] **3.5.10** `server/openapi.yaml`
-- [ ] **3.5.11** `server/README.md` — run, curl, schema, why-authoritative
+- [x] **3.5.1** `server/package.json` + deps (`express`, `better-sqlite3`, `zod`; dev: `vitest` or `node:test`) _(2026-05-03)_
+- [x] **3.5.2** `server/schema.sql` + migration loader in `server.js` _(2026-05-03)_
+- [x] **3.5.3** `server/seed.js` — three decks from GDD §7 _(2026-05-03)_
+- [x] **3.5.4** `server/sm2.js` (port of GDD §4) + `server/sm2.test.js` _(2026-05-03)_
+- [x] **3.5.5** `server/server.js` — Express scaffold, `zod` validation, error middleware _(2026-05-03)_
+- [x] **3.5.6** `GET /health`, `GET /decks`, `GET /decks/:id/schedule` _(2026-05-03)_
+- [x] **3.5.7** `POST /sessions` (server-side SM-2 + idempotency on `sessionId`) _(2026-05-03)_
+- [x] **3.5.8** `GET /sessions/:id` _(2026-05-03)_
+- [x] **3.5.9** `server/server.test.js` — integration tests (~7 cases) _(2026-05-03)_
+- [x] **3.5.10** `server/openapi.yaml` _(2026-05-03)_
+- [x] **3.5.11** `server/README.md` — run, curl, schema, why-authoritative _(2026-05-03)_
 
 Tag: `v0.3.5-backend`.
 
