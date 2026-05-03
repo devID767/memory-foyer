@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS decks (
 CREATE TABLE IF NOT EXISTS cards (
   card_id   TEXT PRIMARY KEY,
   deck_id   TEXT NOT NULL REFERENCES decks(deck_id) ON DELETE CASCADE,
-  front     TEXT NOT NULL,
-  back      TEXT NOT NULL,
   ord       INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_cards_deck ON cards(deck_id);

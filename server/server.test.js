@@ -6,13 +6,37 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createApp } from './server.js';
-import { seed } from './seed.js';
+import { applySeed, loadDeckRegistry, findOrphans } from './registry.js';
 import { migrate } from './db.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schemaSql = readFileSync(join(here, 'schema.sql'), 'utf8');
 
 const FIXED_NOW = new Date('2026-05-03T12:00:00.000Z');
+
+const FIXTURE_DECKS = [
+    {
+        deckId: 'capitals',
+        displayName: 'Capitals of Europe',
+        description: 'Test capitals.',
+        newCardsPerDay: 10,
+        cardIds: ['capitals:1', 'capitals:2', 'capitals:3'],
+    },
+    {
+        deckId: 'idioms',
+        displayName: 'English Idioms',
+        description: 'Test idioms.',
+        newCardsPerDay: 8,
+        cardIds: ['idioms:1', 'idioms:2'],
+    },
+    {
+        deckId: 'periodic',
+        displayName: 'Periodic Table',
+        description: 'Test periodic.',
+        newCardsPerDay: 5,
+        cardIds: ['periodic:1', 'periodic:2'],
+    },
+];
 
 let db;
 let app;
@@ -21,7 +45,7 @@ beforeEach(() => {
     db = new Database(':memory:');
     db.pragma('foreign_keys = ON');
     db.exec(schemaSql);
-    seed(db);
+    applySeed(db, FIXTURE_DECKS);
     app = createApp({ db, now: () => FIXED_NOW });
 });
 
@@ -44,17 +68,17 @@ test('GET /decks lists three seeded decks with counts', async () => {
     const res = await request(app).get('/decks');
     assert.equal(res.status, 200);
     assert.equal(res.body.length, 3);
-    const capitals = res.body.find((d) => d.deckId === 'capitals-eu');
-    assert.equal(capitals.totalCount, 44);
-    assert.equal(capitals.newCount, 10);
-    assert.equal(capitals.dueCount, 10);
+    const capitals = res.body.find((d) => d.deckId === 'capitals');
+    assert.equal(capitals.totalCount, 3);
+    assert.equal(capitals.newCount, 3);
+    assert.equal(capitals.dueCount, 3);
 });
 
 test('GET /decks/:id/schedule returns capped new pool', async () => {
-    const res = await request(app).get('/decks/capitals-eu/schedule');
+    const res = await request(app).get('/decks/capitals/schedule');
     assert.equal(res.status, 200);
-    assert.equal(res.body.deckId, 'capitals-eu');
-    assert.equal(res.body.cards.length, 10);
+    assert.equal(res.body.deckId, 'capitals');
+    assert.equal(res.body.cards.length, 3);
     for (const c of res.body.cards) {
         assert.equal(c.stage, 'new');
         assert.match(c.dueAt, /Z$/);
@@ -70,16 +94,16 @@ test('GET /decks/unknown/schedule → 404 unknown-deck', async () => {
 test('POST /sessions advances schedule and returns full deck snapshot', async () => {
     const body = {
         sessionId: SAMPLE_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [sampleReview('capitals-eu:1', 4)],
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:1', 4)],
     };
     const res = await request(app).post('/sessions').send(body);
     assert.equal(res.status, 200);
     assert.equal(res.body.ok, true);
     assert.equal(res.body.dedup, undefined);
-    assert.equal(res.body.updatedSchedule.deckId, 'capitals-eu');
-    assert.equal(res.body.updatedSchedule.cards.length, 44);
-    const updated = res.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals-eu:1');
+    assert.equal(res.body.updatedSchedule.deckId, 'capitals');
+    assert.equal(res.body.updatedSchedule.cards.length, 3);
+    const updated = res.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals:1');
     assert.equal(updated.stage, 'learning');
     assert.equal(updated.learningStep, 1);
 });
@@ -87,8 +111,8 @@ test('POST /sessions advances schedule and returns full deck snapshot', async ()
 test('POST /sessions retry with same payload → dedup', async () => {
     const body = {
         sessionId: SAMPLE_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [sampleReview('capitals-eu:1', 4)],
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:1', 4)],
     };
     const first = await request(app).post('/sessions').send(body);
     assert.equal(first.status, 200);
@@ -104,11 +128,11 @@ test('POST /sessions retry with same payload → dedup', async () => {
 test('POST /sessions retry with different payload → 409', async () => {
     const first = {
         sessionId: SAMPLE_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [sampleReview('capitals-eu:1', 4)],
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:1', 4)],
     };
     await request(app).post('/sessions').send(first);
-    const conflicting = { ...first, reviews: [sampleReview('capitals-eu:1', 5)] };
+    const conflicting = { ...first, reviews: [sampleReview('capitals:1', 5)] };
     const res = await request(app).post('/sessions').send(conflicting);
     assert.equal(res.status, 409);
     assert.equal(res.body.error, 'session-payload-mismatch');
@@ -117,8 +141,8 @@ test('POST /sessions retry with different payload → 409', async () => {
 test('POST /sessions with grade=2 → 400 validation', async () => {
     const res = await request(app).post('/sessions').send({
         sessionId: ANOTHER_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [{ cardId: 'capitals-eu:1', grade: 2, reviewedAt: '2026-05-03T11:00:00.000Z' }],
+        deckId: 'capitals',
+        reviews: [{ cardId: 'capitals:1', grade: 2, reviewedAt: '2026-05-03T11:00:00.000Z' }],
     });
     assert.equal(res.status, 400);
     assert.equal(res.body.error, 'validation');
@@ -128,8 +152,8 @@ test('POST /sessions with grade=2 → 400 validation', async () => {
 test('POST /sessions with unknown cardId → 400 unknown-card', async () => {
     const res = await request(app).post('/sessions').send({
         sessionId: ANOTHER_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [sampleReview('capitals-eu:9999', 4)],
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:9999', 4)],
     });
     assert.equal(res.status, 400);
     assert.equal(res.body.error, 'unknown-card');
@@ -138,15 +162,15 @@ test('POST /sessions with unknown cardId → 400 unknown-card', async () => {
 test('GET /sessions/:id returns processed session', async () => {
     await request(app).post('/sessions').send({
         sessionId: SAMPLE_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [sampleReview('capitals-eu:1', 4)],
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:1', 4)],
     });
     const res = await request(app).get(`/sessions/${SAMPLE_SESSION}`);
     assert.equal(res.status, 200);
     assert.equal(res.body.sessionId, SAMPLE_SESSION);
-    assert.equal(res.body.deckId, 'capitals-eu');
+    assert.equal(res.body.deckId, 'capitals');
     assert.equal(res.body.reviews.length, 1);
-    assert.equal(res.body.reviews[0].cardId, 'capitals-eu:1');
+    assert.equal(res.body.reviews[0].cardId, 'capitals:1');
 });
 
 test('GET /sessions/:id unknown → 404', async () => {
@@ -159,60 +183,166 @@ test('Migration v1 retags pre-existing learning+reps>0 rows as relearning', () =
     const legacyDb = new Database(':memory:');
     legacyDb.pragma('foreign_keys = ON');
     legacyDb.exec(schemaSql);
-    seed(legacyDb);
+    applySeed(legacyDb, FIXTURE_DECKS);
     legacyDb.prepare(
-        `UPDATE card_schedules SET stage='learning', reps=4 WHERE card_id='capitals-eu:1'`
+        `UPDATE card_schedules SET stage='learning', reps=4 WHERE card_id='capitals:1'`
     ).run();
     legacyDb.prepare(
-        `UPDATE card_schedules SET stage='learning', reps=0 WHERE card_id='capitals-eu:2'`
+        `UPDATE card_schedules SET stage='learning', reps=0 WHERE card_id='capitals:2'`
     ).run();
-    assert.equal(legacyDb.pragma('user_version', { simple: true }), 0);
+    legacyDb.pragma('user_version = 0');
 
     migrate(legacyDb);
 
-    assert.equal(legacyDb.pragma('user_version', { simple: true }), 1);
-    const lapsed = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals-eu:1');
+    assert.equal(legacyDb.pragma('user_version', { simple: true }), 2);
+    const lapsed = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals:1');
     assert.equal(lapsed.stage, 'relearning');
-    const fresh = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals-eu:2');
+    const fresh = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals:2');
     assert.equal(fresh.stage, 'learning');
+});
+
+test('Migration v2 drops front/back columns from legacy cards table', () => {
+    const legacyDb = new Database(':memory:');
+    legacyDb.pragma('foreign_keys = ON');
+    legacyDb.exec(`
+        CREATE TABLE decks (deck_id TEXT PRIMARY KEY, display_name TEXT NOT NULL,
+                            description TEXT NOT NULL DEFAULT '', new_cards_per_day INTEGER NOT NULL);
+        CREATE TABLE cards (
+            card_id TEXT PRIMARY KEY,
+            deck_id TEXT NOT NULL REFERENCES decks(deck_id),
+            front TEXT NOT NULL,
+            back TEXT NOT NULL,
+            ord INTEGER NOT NULL
+        );
+    `);
+    legacyDb.pragma('user_version = 1');
+
+    migrate(legacyDb);
+
+    assert.equal(legacyDb.pragma('user_version', { simple: true }), 2);
+    const cols = legacyDb.prepare('PRAGMA table_info(cards)').all().map((c) => c.name);
+    assert.ok(!cols.includes('front'));
+    assert.ok(!cols.includes('back'));
+    assert.ok(cols.includes('card_id'));
+    assert.ok(cols.includes('ord'));
+});
+
+test('applySeed is idempotent — schedule progress preserved across re-run', async () => {
+    await request(app).post('/sessions').send({
+        sessionId: SAMPLE_SESSION,
+        deckId: 'capitals',
+        reviews: [sampleReview('capitals:1', 4)],
+    });
+
+    applySeed(db, FIXTURE_DECKS);
+
+    const row = db.prepare('SELECT stage, learning_step FROM card_schedules WHERE card_id=?').get('capitals:1');
+    assert.equal(row.stage, 'learning');
+    assert.equal(row.learning_step, 1);
+});
+
+test('applySeed propagates metadata changes from registry', () => {
+    applySeed(db, [
+        { ...FIXTURE_DECKS[0], displayName: 'Renamed Capitals', newCardsPerDay: 2 },
+        FIXTURE_DECKS[1],
+        FIXTURE_DECKS[2],
+    ]);
+
+    const row = db.prepare(
+        'SELECT display_name, new_cards_per_day FROM decks WHERE deck_id=?'
+    ).get('capitals');
+    assert.equal(row.display_name, 'Renamed Capitals');
+    assert.equal(row.new_cards_per_day, 2);
+});
+
+test('applySeed inserts new card and gives it default new schedule', () => {
+    const extended = [
+        { ...FIXTURE_DECKS[0], cardIds: [...FIXTURE_DECKS[0].cardIds, 'capitals:4'] },
+        FIXTURE_DECKS[1],
+        FIXTURE_DECKS[2],
+    ];
+    applySeed(db, extended);
+
+    const card = db.prepare('SELECT deck_id, ord FROM cards WHERE card_id=?').get('capitals:4');
+    assert.equal(card.deck_id, 'capitals');
+    assert.equal(card.ord, 4);
+    const schedule = db.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals:4');
+    assert.equal(schedule.stage, 'new');
+});
+
+test('findOrphans returns card_ids in DB but absent from registry', () => {
+    db.prepare(
+        `INSERT INTO cards (card_id, deck_id, ord) VALUES ('capitals:99', 'capitals', 99)`
+    ).run();
+
+    const orphans = findOrphans(db, FIXTURE_DECKS);
+    assert.deepEqual(orphans, ['capitals:99']);
+});
+
+test('loadDeckRegistry parses fixture file', () => {
+    const decks = loadDeckRegistry(join(here, '__fixtures__', 'decks.json'));
+    assert.equal(decks.length, 1);
+    assert.equal(decks[0].deckId, 'fixture-deck');
+    assert.equal(decks[0].cardIds.length, 2);
+});
+
+test('loadDeckRegistry rejects non-array top level', () => {
+    assert.throws(
+        () => loadDeckRegistry(join(here, 'package.json')),
+        /expected top-level array/
+    );
+});
+
+test('loadDeckRegistry rejects missing required fields', () => {
+    assert.throws(
+        () => loadDeckRegistry(join(here, '__fixtures__', 'decks-missing-field.json')),
+        /missing field/
+    );
+});
+
+test('loadDeckRegistry rejects missing file', () => {
+    assert.throws(
+        () => loadDeckRegistry(join(here, 'nonexistent.json')),
+        /failed to read/
+    );
 });
 
 test('Relearning roundtrip: lapse → relearning, then graduate preserves reps', async () => {
     db.prepare(
         `UPDATE card_schedules
          SET stage='review', reps=3, ease_factor=2.5, interval_days=10, due_at=?
-         WHERE card_id='capitals-eu:1'`
+         WHERE card_id='capitals:1'`
     ).run('2026-05-03T11:00:00.000Z');
 
     const lapse = await request(app).post('/sessions').send({
         sessionId: SAMPLE_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [{ cardId: 'capitals-eu:1', grade: 0, reviewedAt: '2026-05-03T11:30:00.000Z' }],
+        deckId: 'capitals',
+        reviews: [{ cardId: 'capitals:1', grade: 0, reviewedAt: '2026-05-03T11:30:00.000Z' }],
     });
     assert.equal(lapse.status, 200);
-    const afterLapse = lapse.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals-eu:1');
+    const afterLapse = lapse.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals:1');
     assert.equal(afterLapse.stage, 'relearning');
     assert.equal(afterLapse.reps, 3);
     assert.ok(Math.abs(afterLapse.easeFactor - 2.30) < 1e-9);
 
     const step = await request(app).post('/sessions').send({
         sessionId: ANOTHER_SESSION,
-        deckId: 'capitals-eu',
-        reviews: [{ cardId: 'capitals-eu:1', grade: 4, reviewedAt: '2026-05-03T11:40:00.000Z' }],
+        deckId: 'capitals',
+        reviews: [{ cardId: 'capitals:1', grade: 4, reviewedAt: '2026-05-03T11:40:00.000Z' }],
     });
     assert.equal(step.status, 200);
-    const afterStep = step.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals-eu:1');
+    const afterStep = step.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals:1');
     assert.equal(afterStep.stage, 'relearning');
     assert.equal(afterStep.learningStep, 1);
     assert.equal(afterStep.reps, 3);
 
     const graduate = await request(app).post('/sessions').send({
         sessionId: '33333333-3333-4333-8333-333333333333',
-        deckId: 'capitals-eu',
-        reviews: [{ cardId: 'capitals-eu:1', grade: 4, reviewedAt: '2026-05-03T11:50:00.000Z' }],
+        deckId: 'capitals',
+        reviews: [{ cardId: 'capitals:1', grade: 4, reviewedAt: '2026-05-03T11:50:00.000Z' }],
     });
     assert.equal(graduate.status, 200);
-    const afterGraduate = graduate.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals-eu:1');
+    const afterGraduate = graduate.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals:1');
     assert.equal(afterGraduate.stage, 'review');
     assert.equal(afterGraduate.reps, 3, 'graduate from relearning must preserve reps');
     assert.equal(afterGraduate.intervalDays, 1);

@@ -1,0 +1,9 @@
+[
+  {
+    "deckId": "fixture-deck",
+    "displayName": "Fixture Deck",
+    "description": "Used by registry tests only.",
+    "newCardsPerDay": 5,
+    "cardIds": ["fixture-deck:1", "fixture-deck:2"]
+  }
+]

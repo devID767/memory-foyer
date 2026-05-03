@@ -16,7 +16,19 @@ npm start
 # Memory Foyer server listening on http://localhost:3000
 ```
 
-The first start creates `server/data.sqlite` and seeds three decks (Capitals of Europe, Periodic Table 1–20, English Idioms — see [GDD §7](../docs/GDD.md)). To reset all SR history: stop the server, delete `data.sqlite`, restart.
+The first start creates `server/data.sqlite` and seeds the decks declared in [`decks.json`](decks.json). That file is generated from Unity DeckAssets via the `Tools/Memory Foyer/Export Decks → server-decks.json` Editor menu and committed to git — the server does not embed any card content. To reset all SR history: stop the server, delete `data.sqlite`, restart.
+
+### Adding or editing a deck
+
+1. Open the `DeckAsset` under `Assets/Resources/Decks/` in Unity (or create a new one via `Create → MemoryFoyer/Deck`).
+2. Edit cards, `_displayName`, `_newCardsPerDay`, etc. in the Inspector.
+3. Run `Tools/Memory Foyer/Export Decks → server-decks.json` from the Unity menu bar.
+4. Commit the changed `server/decks.json` (and the `.asset` files).
+5. Restart the server. Existing schedules are preserved; new cards default to `stage='new'`. Metadata changes (`displayName`, `description`, `newCardsPerDay`) propagate via upsert.
+
+### Known limitation: deletion
+
+Deleting a deck or card from `decks.json` does **not** remove the corresponding rows from the DB — the seed flow only inserts/updates. Server logs an orphan WARN at boot listing `card_id`s present in DB but absent from the registry. To physically remove rows, run manual SQL.
 
 ```bash
 npm test
@@ -44,16 +56,16 @@ curl localhost:3000/health
 curl localhost:3000/decks
 
 # Schedule for one deck
-curl localhost:3000/decks/capitals-eu/schedule
+curl localhost:3000/decks/capitals/schedule
 
 # Submit a session (UUID and reviews from the client)
 curl -X POST localhost:3000/sessions \
   -H 'content-type: application/json' \
   -d '{
         "sessionId": "11111111-1111-4111-8111-111111111111",
-        "deckId": "capitals-eu",
+        "deckId": "capitals",
         "reviews": [
-          { "cardId": "capitals-eu:1", "grade": 4, "reviewedAt": "2026-05-03T11:00:00.000Z" }
+          { "cardId": "capitals:1", "grade": 4, "reviewedAt": "2026-05-03T11:00:00.000Z" }
         ]
       }'
 
@@ -69,7 +81,7 @@ curl localhost:3000/sessions/11111111-1111-4111-8111-111111111111
 `schema.sql` (idempotent, applied on every boot):
 
 - `decks` — id, display name, description, `new_cards_per_day`.
-- `cards` — per-deck card content, with stable `ord` for new-card ordering.
+- `cards` — registry only: `card_id`, `deck_id`, `ord`. Card text (front/back) lives in DeckAsset SOs on the client; the server never stores it.
 - `card_schedules` — one row per card holding `Sm2State` (reps, ease, interval, due, stage, learning step). All times stored as ISO-8601 UTC strings with `Z` suffix.
 - `processed_sessions` — `session_id UNIQUE`, `payload_hash`, full `snapshot_json` of the deck schedule at first processing time. Used for idempotent retries.
 - `review_log` — append-only log of every grade submitted, joined by `session_id`.
@@ -81,7 +93,7 @@ The server is the source of truth for `Sm2State`. The Unity client caches the la
 ## Known limitations
 
 1. **New-card cap is per-fetch, not per-UTC-day.** `GET /decks/:id/schedule` returns at most `new_cards_per_day` cards in `stage='new'` (ordered by `cards.ord`). The same N cards surface on every fetch until the player grades them — this diverges from a literal reading of GDD §5 ("per UTC day") in favor of a simpler implementation. Adding per-day release tracking would require a `released_on` column and is intentionally deferred.
-2. **Wire collapses `relearning` → `learning`.** The C# domain has four stages (`New`/`Learning`/`Review`/`Relearning`); the wire format and server schema use only three (`new`/`learning`/`review`), matching `ScheduleMappers.StageToWire`. The server SM-2 distinguishes the two cases internally via `reps > 0` (collapsed-relearning preserves reps on graduate; plain learning starts at `reps = 1`). The C# client cannot make this distinction when reading back, so an offline-graded card in the relearning queue computes `repetitions = 1` on graduate locally vs preserved-reps on the server. This is healed on next sync — the server response overwrites the cache. Acceptable per [GDD §15](../docs/GDD.md).
+2. **Removing a deck or card requires manual SQL.** The `decks.json` seed flow inserts and updates but never deletes — protects user progress. Boot-time orphan WARN identifies stale rows; cleanup is operator-driven.
 
 ## Idempotency contract
 
