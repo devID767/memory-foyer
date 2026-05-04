@@ -9,22 +9,21 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 
 - [ ] **T-2** (2026-05-04) Eliminate openapi.yaml ↔ zod schema duplication via `zod-to-openapi`. Currently `server/openapi.yaml` and `server/schemas.js` describe the same DTOs (CardReview, SessionResult, etc.) in parallel and can drift silently. Generate the OpenAPI spec from zod schemas as single source of truth; keep `openapi.yaml` as a generated artifact.
 
-- [ ] **T-3** (2026-05-04) Align `POST /sessions` `updatedSchedule` with `GET /decks/:id/schedule`
-      filter semantics. Currently `buildDeckSchedule` in `server/sessions.js` returns the *full*
-      deck (all cards, including `stage='new'` rows that haven't been released to the learner),
-      while `GET /decks/:id/schedule` returns only the released subset (post T-1: per-UTC-day
-      release tracking via `released_on`). The Unity client overwrites its cache atomically with
-      the POST response, so unreleased cards leak into the cache and can surface as "due" in the
-      client's local queue computation, contradicting GDD §5: *"the client trusts that filter and
-      does not re-cap"*. Fix: filter `buildDeckSchedule` identically to `GET /:id/schedule`, OR
-      rename the wire field to clarify it's a full snapshot and have the client re-apply the
-      filter. Decide and document. **Acceptance:** integration test in `server/server.test.js`
-      proving `POST /sessions` response and a subsequent `GET /decks/:id/schedule` for the same
-      deck return identical card sets; dedup-retry returns the same filtered snapshot even if
-      the daily quota has shifted between original and retry.
-
 ## Bugs
-<!-- next ID: B-1 -->
+<!-- next ID: B-2 -->
+
+- [ ] **B-1** (2026-05-04) Daily new-card cap can be exceeded if a client POSTs a review for a
+      `stage='new'` card whose `released_on IS NULL` (i.e. the card was never returned by
+      `GET /:id/schedule`). After SM-2 the card transitions stage but `released_on` stays NULL,
+      so `decks.js` `releasedToday` (which counts `released_on = today`) does not see it; a
+      subsequent `GET /:id/schedule` on the same UTC day can release another full
+      `new_cards_per_day` quota — total new cards introduced today exceeds the cap. **Dormant in
+      production:** the Unity client always calls `GET /:id/schedule` before any POST
+      (`Assets/Scripts/Application/Sessions/ReviewSessionService.cs:93`), so the leak is only
+      reachable via direct curl / future client. **Acceptance:** integration test that constructs
+      the leak (POST without prior GET on a fresh deck → second GET releases > cap cards) and
+      proves the chosen fix — either server stamps `released_on = today` on grading any
+      `stage='new'` card, or POST rejects reviews referencing an unreleased new card with 400.
 
 ## Ideas
 <!-- next ID: I-1 -->
@@ -33,3 +32,4 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 
 - [x] **T-0** (2026-05-02 → 2026-05-02) Set up first system
 - [x] **T-1** (2026-05-04 → 2026-05-04) Server: enforce per-UTC-day new-card cap (replace per-fetch)
+- [x] **T-3** (2026-05-04 → 2026-05-04) Align `POST /sessions` `updatedSchedule` with `GET /decks/:id/schedule` filter semantics
