@@ -25,14 +25,12 @@ namespace MemoryFoyer.Composition
     {
         protected override void Configure(IContainerBuilder builder)
         {
-            // 1. MessagePipe — register first; brokers depend on the options object
             MessagePipeOptions options = builder.RegisterMessagePipe();
             builder.RegisterMessageBroker<DeckSelectedEvent>(options);
             builder.RegisterMessageBroker<SessionStartedEvent>(options);
             builder.RegisterMessageBroker<CardReviewedEvent>(options);
             builder.RegisterMessageBroker<SessionFinishedEvent>(options);
 
-            // 2. ServerConfig — load SO from Resources, fail loud if missing
             ServerConfigAsset? serverAsset = Resources.Load<ServerConfigAsset>("Config/ServerConfig");
             if (serverAsset == null)
             {
@@ -43,7 +41,6 @@ namespace MemoryFoyer.Composition
             ServerConfig serverConfig = serverAsset.ToConfig();
             builder.RegisterInstance<ServerConfig>(serverConfig);
 
-            // 3. DeckAssets — load all from Resources, fail loud if empty
             DeckAsset[] deckAssets = Resources.LoadAll<DeckAsset>("Decks");
             if (deckAssets.Length == 0)
             {
@@ -53,32 +50,24 @@ namespace MemoryFoyer.Composition
 
             builder.RegisterInstance<IReadOnlyList<DeckAsset>>(deckAssets);
 
-            // 4. Domain primitives
             builder.Register<IClock, SystemClock>(Lifetime.Singleton);
-
-            // 5. Repositories
             builder.Register<IDeckRepository, ScriptableObjectDeckRepository>(Lifetime.Singleton);
-
-            // 6. HTTP
             builder.Register<IHttpClient, UnityWebRequestHttpClient>(Lifetime.Singleton);
 
-            // 7. Analytics — conditional dev/release
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             builder.Register<IAnalyticsService, ConsoleAnalyticsService>(Lifetime.Singleton);
 #else
             builder.Register<IAnalyticsService, NoOpAnalyticsService>(Lifetime.Singleton);
 #endif
 
-            // 8. Schedule cache — root path injected from Composition (Application can't see persistentDataPath)
+            // persistentDataPath is read here so Application stays UnityEngine-free.
             string cacheRoot = Path.Combine(Application.persistentDataPath, "ScheduleCache");
             builder.Register<IScheduleCache>(resolver =>
                 new JsonFileScheduleCache(cacheRoot, resolver.Resolve<IClock>()),
                 Lifetime.Singleton);
 
-            // 9. Schedule store triple
-            //    HttpScheduleStore registered as concrete-only — invisible to anyone resolving IScheduleStore.
-            //    CachingScheduleStore registered as concrete + aliased to IScheduleStore via .As<T>(),
-            //    so PendingSessionDrainer can resolve the concrete type for DrainPendingAsync().
+            // HttpScheduleStore stays concrete-only so it never satisfies IScheduleStore directly;
+            // CachingScheduleStore owns the alias and stays reachable as a concrete type for DrainPendingAsync.
             builder.Register<HttpScheduleStore>(Lifetime.Singleton);
             builder.Register<CachingScheduleStore>(resolver =>
                 new CachingScheduleStore(
@@ -86,12 +75,11 @@ namespace MemoryFoyer.Composition
                     cache:     resolver.Resolve<IScheduleCache>(),
                     analytics: resolver.Resolve<IAnalyticsService>()),
                 Lifetime.Singleton)
-                .As<IScheduleStore>();
+                .As<IScheduleStore>()
+                .AsSelf();
 
-            // 10. Session service
             builder.Register<IReviewSessionService, ReviewSessionService>(Lifetime.Singleton);
 
-            // 11. Entry points
             builder.RegisterEntryPoint<CompositionSmokeTest>();
             builder.RegisterEntryPoint<PendingSessionDrainer>();
         }

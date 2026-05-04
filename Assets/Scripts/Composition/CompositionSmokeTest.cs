@@ -29,8 +29,6 @@ namespace MemoryFoyer.Composition
 
         public void Start()
         {
-            // Confirms the IScheduleStore alias resolves to the same CachingScheduleStore singleton
-            // that PendingSessionDrainer receives — a misconfigured registration would surface here.
             Debug.Assert(_schedule is CachingScheduleStore,
                 $"[Composition] IScheduleStore expected CachingScheduleStore, got {_schedule.GetType().Name}");
 

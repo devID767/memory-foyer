@@ -28,8 +28,7 @@ namespace MemoryFoyer.Composition
             }
             catch (Exception ex)
             {
-                // Drain is best-effort — log and continue. Pending entries remain on disk
-                // and will be retried on the next app start.
+                // Best-effort: pending entries stay on disk and retry on next app start.
                 Debug.LogWarning($"[Composition] Pending drain failed: {ex.Message}");
             }
         }
