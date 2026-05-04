@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS card_schedules (
   interval_days  INTEGER NOT NULL DEFAULT 0,
   due_at         TEXT    NOT NULL,
   stage          TEXT    NOT NULL DEFAULT 'new', -- one of: 'new' | 'learning' | 'review' | 'relearning'
-  learning_step  INTEGER NOT NULL DEFAULT 0
+  learning_step  INTEGER NOT NULL DEFAULT 0,
+  released_on    TEXT             -- UTC date 'YYYY-MM-DD' the card first entered the learner's queue; NULL = not yet released
 );
 
 CREATE TABLE IF NOT EXISTS processed_sessions (

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Memory Foyer Backend
-  version: 0.3.5
+  version: 0.4.0
   description: |
     Local-only authoritative backend for the Memory Foyer Unity client.
     Stores per-card SM-2 state in SQLite, runs server-side SM-2 on every
@@ -35,7 +35,7 @@ paths:
 
   /decks/{id}/schedule:
     get:
-      summary: Per-card schedule (filtered by new-card cap)
+      summary: Per-card schedule. Releases up to `new_cards_per_day` fresh `stage='new'` cards per UTC day (mutating read; idempotent on retry); leftovers from prior days persist.
       parameters:
         - in: path
           name: id

@@ -222,7 +222,7 @@ The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/sch
 5. Service filters `DueAt ≤ now`, sorts, builds queue. Transitions `Loading → Playing`, publishes `SessionStartedEvent`.
 6. Player grades 3 cards → `GradeAsync(Good)` × 3. Each grade: applies `Sm2Algorithm.Schedule` locally (for `NextDueAt` in the event), appends to in-memory `reviews`, persists via `cache.AppendPending`, publishes `CardReviewedEvent`.
 7. Queue empty → `Playing → Uploading`. Service calls `IScheduleStore.UploadSessionAsync(result)`.
-8. `POST /sessions` → 200 with `updatedSchedule` (full deck). `CachingScheduleStore` removes pending, overwrites cache.
+8. `POST /sessions` → 200 with `updatedSchedule` (released subset, same filter as `GET /:id/schedule`). `CachingScheduleStore` removes pending, overwrites cache.
 9. `Uploading → Idle`. Publishes `SessionFinishedEvent(uploadedSuccessfully: true)`.
 10. `FoyerPresenter` re-fetches `GET /decks` to refresh deck-button counts.
 

@@ -65,4 +65,14 @@ export function migrate(db) {
         }
         db.pragma('user_version = 2');
     }
+    if (version < 3) {
+        // Per-UTC-day new-card release tracking (GDD §5). Existing non-new rows stay NULL —
+        // the schedule logic only consults released_on for stage='new', and the daily quota
+        // counter only matches strict date equality. NULL on past-graduated rows is correct.
+        const cols = db.prepare('PRAGMA table_info(card_schedules)').all();
+        if (cols.length > 0 && !cols.some((c) => c.name === 'released_on')) {
+            db.exec(`ALTER TABLE card_schedules ADD COLUMN released_on TEXT;`);
+        }
+        db.pragma('user_version = 3');
+    }
 }

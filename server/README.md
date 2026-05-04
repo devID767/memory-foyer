@@ -82,7 +82,7 @@ curl localhost:3000/sessions/11111111-1111-4111-8111-111111111111
 
 - `decks` — id, display name, description, `new_cards_per_day`.
 - `cards` — registry only: `card_id`, `deck_id`, `ord`. Card text (front/back) lives in DeckAsset SOs on the client; the server never stores it.
-- `card_schedules` — one row per card holding `Sm2State` (reps, ease, interval, due, stage, learning step). All times stored as ISO-8601 UTC strings with `Z` suffix.
+- `card_schedules` — one row per card holding `Sm2State` (reps, ease, interval, due, stage, learning step) plus `released_on` (UTC date `'YYYY-MM-DD'` the card first entered the learner's queue; NULL until released). All times stored as ISO-8601 UTC strings with `Z` suffix.
 - `processed_sessions` — `session_id UNIQUE`, `payload_hash`, full `snapshot_json` of the deck schedule at first processing time. Used for idempotent retries.
 - `review_log` — append-only log of every grade submitted, joined by `session_id`.
 
@@ -92,12 +92,22 @@ The server is the source of truth for `Sm2State`. The Unity client caches the la
 
 ## Known limitations
 
-1. **New-card cap is per-fetch, not per-UTC-day.** `GET /decks/:id/schedule` returns at most `new_cards_per_day` cards in `stage='new'` (ordered by `cards.ord`). The same N cards surface on every fetch until the player grades them — this diverges from a literal reading of GDD §5 ("per UTC day") in favor of a simpler implementation. Adding per-day release tracking would require a `released_on` column and is intentionally deferred.
-2. **Removing a deck or card requires manual SQL.** The `decks.json` seed flow inserts and updates but never deletes — protects user progress. Boot-time orphan WARN identifies stale rows; cleanup is operator-driven.
+1. **Removing a deck or card requires manual SQL.** The `decks.json` seed flow inserts and updates but never deletes — protects user progress. Boot-time orphan WARN identifies stale rows; cleanup is operator-driven.
+
+## New-card release semantics
+
+`GET /decks/:id/schedule` is a mutating read: it sets `released_on = today (UTC)` on up to `new_cards_per_day` previously-unreleased `stage='new'` cards (ordered by `cards.ord`), then returns every `learning|review|relearning` card plus every `stage='new'` card with `released_on IS NOT NULL`. The release step is wrapped in a SQLite transaction and is idempotent on retry — `released_on` persists across stage transitions, so a graded-then-graduated card still consumes its slot for that UTC day.
+
+Concretely:
+
+- Two consecutive fetches in the same UTC day return the same cards. The second fetch releases nothing further.
+- Cards left ungraded across a UTC midnight stay visible (still `stage='new'`, `released_on` from a prior day) and do **not** count against the new day's quota — the new day releases up to `new_cards_per_day` additional fresh cards on top of leftovers.
+- A player who never opens the schedule on day N does **not** accumulate that day's quota for day N+1: release is lazy, triggered only by `GET /:id/schedule`.
+- `GET /decks` projects the next-fetch outcome (`newCount = released_new_count + min(unreleased_new_count, max(0, new_cards_per_day - released_today_count))`) without mutating state — calling `/decks` is always safe.
 
 ## Idempotency contract
 
-- First `POST /sessions` with a new `sessionId` → `200 { ok: true, updatedSchedule }`. The full deck snapshot is stored in `processed_sessions.snapshot_json`.
+- First `POST /sessions` with a new `sessionId` → `200 { ok: true, updatedSchedule }`. The released-subset snapshot (same filter as `GET /:id/schedule`) is stored in `processed_sessions.snapshot_json`.
 - Repeat with same `sessionId` and same canonical `payload_hash` (sha-256 of `[{cardId, grade, reviewedAt}, ...]` with array order preserved) → `200 { ok: true, dedup: true, updatedSchedule }` — the stored snapshot is returned without re-running SM-2.
 - Repeat with same `sessionId` but a different `payload_hash` → `409 { error: 'session-payload-mismatch', sessionId }`.
 

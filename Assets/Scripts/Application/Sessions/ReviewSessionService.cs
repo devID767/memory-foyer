@@ -99,7 +99,7 @@ namespace MemoryFoyer.Application.Sessions
 
                 // Cards absent from the schedule are skipped: per GDD §5 the server is the
                 // authority on which cards are due (it applies the per-day new-card cap and
-                // returns the full schedule for the deck).
+                // returns the released schedule for the deck — released-new + non-new only).
                 IEnumerable<QueueEntry> due = deck.Cards
                     .Where(card => stateByCard.TryGetValue(card.Id, out Sm2State s) && s.DueAt <= now)
                     .Select(card => new QueueEntry(card.Id, card.Front, card.Back, stateByCard[card.Id]))
