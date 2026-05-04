@@ -61,7 +61,7 @@ namespace MemoryFoyer.Composition
 #endif
 
             // persistentDataPath is read here so Application stays UnityEngine-free.
-            string cacheRoot = Path.Combine(Application.persistentDataPath, "ScheduleCache");
+            string cacheRoot = Path.Combine(UnityEngine.Application.persistentDataPath, "ScheduleCache");
             builder.Register<IScheduleCache>(resolver =>
                 new JsonFileScheduleCache(cacheRoot, resolver.Resolve<IClock>()),
                 Lifetime.Singleton);

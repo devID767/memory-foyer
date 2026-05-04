@@ -87,13 +87,13 @@ May proceed in parallel with Phase 1 — no shared files with the Unity client.
 
 Tag: `v0.3.5-backend`.
 
-## Phase 4: VContainer wiring [CURRENT]
+## Phase 4: VContainer wiring
 
-- [ ] **4.1** `ProjectLifetimeScope` with all bindings (incl. `IScheduleStore` triple, `ServerConfig`) + MessagePipe registration
-- [ ] **4.2** `FoyerLifetimeScope` (initially empty, populated in Phase 5/6)
-- [ ] **4.3** Composition smoke-test `IStartable`
+- [x] **4.1** `ProjectLifetimeScope` with all bindings (incl. `IScheduleStore` triple, `ServerConfig`) + MessagePipe registration _(2026-05-04)_
+- [x] **4.2** `FoyerLifetimeScope` (initially empty, populated in Phase 5/6) _(2026-05-04)_
+- [x] **4.3** Composition smoke-test `IStartable` _(2026-05-04)_
 
-## Phase 5: Foyer 3D scene
+## Phase 5: Foyer 3D scene [CURRENT]
 
 - [ ] **5.1** Scene setup (floor, walls, lighting)
 - [ ] **5.2** URP post-processing (bloom, vignette)
