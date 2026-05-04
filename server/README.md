@@ -107,7 +107,7 @@ Concretely:
 
 ## Idempotency contract
 
-- First `POST /sessions` with a new `sessionId` → `200 { ok: true, updatedSchedule }`. The full deck snapshot is stored in `processed_sessions.snapshot_json`.
+- First `POST /sessions` with a new `sessionId` → `200 { ok: true, updatedSchedule }`. The released-subset snapshot (same filter as `GET /:id/schedule`) is stored in `processed_sessions.snapshot_json`.
 - Repeat with same `sessionId` and same canonical `payload_hash` (sha-256 of `[{cardId, grade, reviewedAt}, ...]` with array order preserved) → `200 { ok: true, dedup: true, updatedSchedule }` — the stored snapshot is returned without re-running SM-2.
 - Repeat with same `sessionId` but a different `payload_hash` → `409 { error: 'session-payload-mismatch', sessionId }`.
 

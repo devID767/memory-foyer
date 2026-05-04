@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { rowToCardScheduleDto } from './mappers.js';
+import { selectDeckScheduleRows } from './scheduleQuery.js';
 
 // 'YYYY-MM-DD' in UTC — sortable lexically, matches SQLite default BINARY collation
 // for equality and ordering against the released_on column.
@@ -104,14 +105,7 @@ export function createDecksRouter({ db, now }) {
         });
         releaseFresh();
 
-        const rows = db.prepare(
-            `SELECT cs.* FROM card_schedules cs
-             JOIN cards c ON c.card_id = cs.card_id
-             WHERE c.deck_id = ?
-               AND (cs.stage IN ('learning','review','relearning')
-                    OR (cs.stage = 'new' AND cs.released_on IS NOT NULL))
-             ORDER BY c.ord ASC`
-        ).all(deckId);
+        const rows = selectDeckScheduleRows(db, deckId);
 
         res.json({ deckId, cards: rows.map(rowToCardScheduleDto) });
     });

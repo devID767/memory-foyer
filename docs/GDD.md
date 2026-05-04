@@ -211,7 +211,7 @@ Node.js + Express in `server/`. SQLite (`better-sqlite3`) is the system of recor
 | POST | `/sessions` | Accepts `{ sessionId, deckId, reviews }`; runs server-side SM-2; returns `{ ok: true, dedup?: bool, updatedSchedule }` |
 | GET | `/sessions/:id` | Fetch a previously processed session — `{ sessionId, deckId, processedAt, reviews }` |
 
-**`updatedSchedule` shape:** identical to `GET /decks/:id/schedule` body — `{ deckId, cards: [...] }` — and contains the **full deck**, not just the cards touched by this session. This lets the client overwrite its cache atomically without merge logic.
+**`updatedSchedule` shape:** identical to `GET /decks/:id/schedule` body — `{ deckId, cards: [...] }` — and applies the **same released-subset filter**: released-new cards plus all `learning` / `review` / `relearning` cards in the deck, never unreleased new cards. This lets the client overwrite its cache atomically without merge logic and without re-applying the daily cap on its side.
 
 **Domain ↔ DTO field mapping** (lives in `Infrastructure/Dtos/ScheduleMappers.cs`):
 

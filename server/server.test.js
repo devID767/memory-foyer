@@ -101,7 +101,9 @@ test('GET /decks/unknown/schedule → 404 unknown-deck', async () => {
     assert.equal(res.body.error, 'unknown-deck');
 });
 
-test('POST /sessions advances schedule and returns full deck snapshot', async () => {
+test('POST /sessions advances schedule and returns released-subset snapshot', async () => {
+    // No prior GET → unreleased new cards (capitals:2, capitals:3) are filtered out;
+    // capitals:1 transitions to 'learning' on grading and passes the filter.
     const body = {
         sessionId: SAMPLE_SESSION,
         deckId: 'capitals',
@@ -112,10 +114,62 @@ test('POST /sessions advances schedule and returns full deck snapshot', async ()
     assert.equal(res.body.ok, true);
     assert.equal(res.body.dedup, undefined);
     assert.equal(res.body.updatedSchedule.deckId, 'capitals');
-    assert.equal(res.body.updatedSchedule.cards.length, 3);
-    const updated = res.body.updatedSchedule.cards.find((c) => c.cardId === 'capitals:1');
+    assert.equal(res.body.updatedSchedule.cards.length, 1);
+    const updated = res.body.updatedSchedule.cards[0];
+    assert.equal(updated.cardId, 'capitals:1');
     assert.equal(updated.stage, 'learning');
     assert.equal(updated.learningStep, 1);
+});
+
+test('POST /sessions updatedSchedule equals subsequent GET /:id/schedule', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+
+    const firstGet = await request(app).get('/decks/cap-test/schedule');
+    assert.equal(firstGet.status, 200);
+    assert.equal(firstGet.body.cards.length, 2, 'GET releases exactly newCardsPerDay');
+
+    const post = await request(app).post('/sessions').send({
+        sessionId: SAMPLE_SESSION,
+        deckId: 'cap-test',
+        reviews: [sampleReview('cap-test:1', 4)],
+    });
+    assert.equal(post.status, 200);
+
+    const secondGet = await request(app).get('/decks/cap-test/schedule');
+    assert.equal(secondGet.status, 200);
+    assert.deepEqual(
+        post.body.updatedSchedule.cards,
+        secondGet.body.cards,
+        'updatedSchedule must match a fresh GET — same released-subset filter',
+    );
+    assert.equal(post.body.updatedSchedule.cards.length, 2);
+});
+
+test('POST /sessions dedup retry returns stored snapshot unaffected by quota shift', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+
+    currentNow = new Date('2026-05-03T12:00:00.000Z');
+    await request(app).get('/decks/cap-test/schedule');
+    const original = await request(app).post('/sessions').send({
+        sessionId: SAMPLE_SESSION,
+        deckId: 'cap-test',
+        reviews: [sampleReview('cap-test:1', 4)],
+    });
+    assert.equal(original.status, 200);
+    assert.equal(original.body.updatedSchedule.cards.length, 2);
+
+    // Cross UTC day boundary WITHOUT calling GET on day 2 — released_on for
+    // cap-test:3..5 is still NULL. The dedup retry must replay the exact
+    // snapshot stored at first POST, not re-derive it from current DB state.
+    currentNow = new Date('2026-05-04T12:00:00.000Z');
+    const retry = await request(app).post('/sessions').send({
+        sessionId: SAMPLE_SESSION,
+        deckId: 'cap-test',
+        reviews: [sampleReview('cap-test:1', 4)],
+    });
+    assert.equal(retry.status, 200);
+    assert.equal(retry.body.dedup, true);
+    assert.deepEqual(retry.body.updatedSchedule, original.body.updatedSchedule);
 });
 
 test('POST /sessions retry with same payload → dedup', async () => {

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { sessionResultSchema, sessionIdParamSchema } from './schemas.js';
 import { schedule as sm2Schedule } from './sm2.js';
 import { rowToCardScheduleDto, rowToReviewDto, rowToSm2State, sm2StateToRowValues } from './mappers.js';
+import { selectDeckScheduleRows } from './scheduleQuery.js';
 
 function canonicalReviewsHash(reviews) {
     const canonical = JSON.stringify(
@@ -11,13 +12,9 @@ function canonicalReviewsHash(reviews) {
     return createHash('sha256').update(canonical).digest('hex');
 }
 
+// Mirrors GET /decks/:id/schedule — see scheduleQuery.js for the shared filter.
 function buildDeckSchedule(db, deckId) {
-    const rows = db.prepare(
-        `SELECT cs.* FROM card_schedules cs
-         JOIN cards c ON c.card_id = cs.card_id
-         WHERE c.deck_id = ?
-         ORDER BY c.ord ASC`
-    ).all(deckId);
+    const rows = selectDeckScheduleRows(db, deckId);
     return { deckId, cards: rows.map(rowToCardScheduleDto) };
 }
 
