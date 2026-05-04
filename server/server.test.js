@@ -40,13 +40,23 @@ const FIXTURE_DECKS = [
 
 let db;
 let app;
+let currentNow;
+
+const CAP_TEST_DECK = {
+    deckId: 'cap-test',
+    displayName: 'Cap Test',
+    description: 'Daily-cap fixture (cards > newCardsPerDay).',
+    newCardsPerDay: 2,
+    cardIds: ['cap-test:1', 'cap-test:2', 'cap-test:3', 'cap-test:4', 'cap-test:5'],
+};
 
 beforeEach(() => {
     db = new Database(':memory:');
     db.pragma('foreign_keys = ON');
     db.exec(schemaSql);
     applySeed(db, FIXTURE_DECKS);
-    app = createApp({ db, now: () => FIXED_NOW });
+    currentNow = FIXED_NOW;
+    app = createApp({ db, now: () => currentNow });
 });
 
 const SAMPLE_SESSION = '11111111-1111-4111-8111-111111111111';
@@ -194,7 +204,7 @@ test('Migration v1 retags pre-existing learning+reps>0 rows as relearning', () =
 
     migrate(legacyDb);
 
-    assert.equal(legacyDb.pragma('user_version', { simple: true }), 2);
+    assert.equal(legacyDb.pragma('user_version', { simple: true }), 3);
     const lapsed = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals:1');
     assert.equal(lapsed.stage, 'relearning');
     const fresh = legacyDb.prepare('SELECT stage FROM card_schedules WHERE card_id=?').get('capitals:2');
@@ -219,7 +229,7 @@ test('Migration v2 drops front/back columns from legacy cards table', () => {
 
     migrate(legacyDb);
 
-    assert.equal(legacyDb.pragma('user_version', { simple: true }), 2);
+    assert.equal(legacyDb.pragma('user_version', { simple: true }), 3);
     const cols = legacyDb.prepare('PRAGMA table_info(cards)').all().map((c) => c.name);
     assert.ok(!cols.includes('front'));
     assert.ok(!cols.includes('back'));
@@ -346,4 +356,91 @@ test('Relearning roundtrip: lapse → relearning, then graduate preserves reps',
     assert.equal(afterGraduate.stage, 'review');
     assert.equal(afterGraduate.reps, 3, 'graduate from relearning must preserve reps');
     assert.equal(afterGraduate.intervalDays, 1);
+});
+
+test('GET /:id/schedule daily cap holds across two consecutive fetches in same UTC day', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+
+    const first = await request(app).get('/decks/cap-test/schedule');
+    assert.equal(first.status, 200);
+    const firstNewIds = first.body.cards.filter((c) => c.stage === 'new').map((c) => c.cardId);
+    assert.deepEqual(firstNewIds, ['cap-test:1', 'cap-test:2'], 'first fetch releases exactly newCardsPerDay cards in ord order');
+
+    const second = await request(app).get('/decks/cap-test/schedule');
+    assert.equal(second.status, 200);
+    const secondNewIds = second.body.cards.filter((c) => c.stage === 'new').map((c) => c.cardId);
+    assert.deepEqual(secondNewIds, firstNewIds, 'second fetch on same UTC day releases nothing new');
+});
+
+test('GET /:id/schedule leftover from yesterday surfaces today plus today fresh quota', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+
+    currentNow = new Date('2026-05-03T12:00:00.000Z');
+    const day1 = await request(app).get('/decks/cap-test/schedule');
+    const day1NewIds = day1.body.cards.filter((c) => c.stage === 'new').map((c) => c.cardId);
+    assert.deepEqual(day1NewIds, ['cap-test:1', 'cap-test:2']);
+
+    currentNow = new Date('2026-05-04T12:00:00.000Z');
+    const day2 = await request(app).get('/decks/cap-test/schedule');
+    const day2NewIds = day2.body.cards.filter((c) => c.stage === 'new').map((c) => c.cardId);
+    assert.deepEqual(
+        day2NewIds,
+        ['cap-test:1', 'cap-test:2', 'cap-test:3', 'cap-test:4'],
+        'day-2 surfaces 2 ungraded leftovers + 2 fresh from today\'s quota',
+    );
+
+    const day2Second = await request(app).get('/decks/cap-test/schedule');
+    const day2SecondNewIds = day2Second.body.cards.filter((c) => c.stage === 'new').map((c) => c.cardId);
+    assert.deepEqual(day2SecondNewIds, day2NewIds, 'second day-2 fetch releases nothing further (cap honored)');
+});
+
+test('GET /decks newCount projects daily cap without mutating release state', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+
+    const beforeFetch = await request(app).get('/decks');
+    const cap0 = beforeFetch.body.find((d) => d.deckId === 'cap-test');
+    assert.equal(cap0.newCount, 2, 'pre-/schedule projection equals daily cap');
+    assert.equal(cap0.totalCount, 5);
+    const releasedBefore = db.prepare(
+        `SELECT COUNT(*) AS n FROM card_schedules cs JOIN cards c ON c.card_id = cs.card_id
+         WHERE c.deck_id = 'cap-test' AND cs.released_on IS NOT NULL`
+    ).get().n;
+    assert.equal(releasedBefore, 0, '/decks must not mutate released_on');
+
+    await request(app).get('/decks/cap-test/schedule');
+    const afterFetch = await request(app).get('/decks');
+    const cap1 = afterFetch.body.find((d) => d.deckId === 'cap-test');
+    assert.equal(cap1.newCount, 2, 'post-/schedule projection unchanged (already-released = released = 2)');
+
+    currentNow = new Date('2026-05-04T12:00:00.000Z');
+    const day2 = await request(app).get('/decks');
+    const cap2 = day2.body.find((d) => d.deckId === 'cap-test');
+    assert.equal(cap2.newCount, 4, 'day-2 projection: 2 leftover + 2 fresh');
+});
+
+test('Migration v3 adds released_on column to card_schedules', () => {
+    const legacyDb = new Database(':memory:');
+    legacyDb.pragma('foreign_keys = ON');
+    legacyDb.exec(`
+        CREATE TABLE decks (deck_id TEXT PRIMARY KEY, display_name TEXT NOT NULL,
+                            description TEXT NOT NULL DEFAULT '', new_cards_per_day INTEGER NOT NULL);
+        CREATE TABLE cards (card_id TEXT PRIMARY KEY,
+                            deck_id TEXT NOT NULL REFERENCES decks(deck_id), ord INTEGER NOT NULL);
+        CREATE TABLE card_schedules (
+            card_id TEXT PRIMARY KEY REFERENCES cards(card_id),
+            reps INTEGER NOT NULL DEFAULT 0,
+            ease_factor REAL NOT NULL DEFAULT 2.5,
+            interval_days INTEGER NOT NULL DEFAULT 0,
+            due_at TEXT NOT NULL,
+            stage TEXT NOT NULL DEFAULT 'new',
+            learning_step INTEGER NOT NULL DEFAULT 0
+        );
+    `);
+    legacyDb.pragma('user_version = 2');
+
+    migrate(legacyDb);
+
+    assert.equal(legacyDb.pragma('user_version', { simple: true }), 3);
+    const cols = legacyDb.prepare('PRAGMA table_info(card_schedules)').all().map((c) => c.name);
+    assert.ok(cols.includes('released_on'), 'released_on column added by v3');
 });
