@@ -46,6 +46,13 @@ export function createSessionsRouter({ db, now }) {
                  due_at = @due_at, stage = @stage, learning_step = @learning_step
              WHERE card_id = @card_id`
         );
+        // B-1: grading a stage='new' card whose released_on is still NULL must count
+        // toward today's cap; otherwise a follow-up GET releases another full quota.
+        const stampReleasedOn = db.prepare(
+            `UPDATE card_schedules SET released_on = ?
+             WHERE card_id = ? AND released_on IS NULL`
+        );
+        const today = processedAt.slice(0, 10);
         const insertLog = db.prepare(
             'INSERT INTO review_log (session_id, card_id, grade, reviewed_at) VALUES (?, ?, ?, ?)'
         );
@@ -81,6 +88,9 @@ export function createSessionsRouter({ db, now }) {
 
                 for (const review of reviews) {
                     const row = selectSchedule.get(review.cardId);
+                    if (row.stage === 'new' && row.released_on === null) {
+                        stampReleasedOn.run(today, review.cardId);
+                    }
                     const state = rowToSm2State(row);
                     const next = sm2Schedule(state, review.grade, new Date(review.reviewedAt));
                     updateSchedule.run({ ...sm2StateToRowValues(next), card_id: review.cardId });

@@ -145,6 +145,35 @@ test('POST /sessions updatedSchedule equals subsequent GET /:id/schedule', async
     assert.equal(post.body.updatedSchedule.cards.length, 2);
 });
 
+test('B-1: POST without prior GET on a stage="new" card stamps released_on, preventing cap overflow', async () => {
+    applySeed(db, [CAP_TEST_DECK]);
+    currentNow = new Date('2026-05-03T12:00:00.000Z');
+
+    const post = await request(app).post('/sessions').send({
+        sessionId: SAMPLE_SESSION,
+        deckId: 'cap-test',
+        reviews: [sampleReview('cap-test:1', 4)],
+    });
+    assert.equal(post.status, 200);
+
+    const c1 = db.prepare(
+        `SELECT released_on FROM card_schedules WHERE card_id = 'cap-test:1'`
+    ).get();
+    assert.equal(c1.released_on, '2026-05-03', 'POST must stamp released_on on stage="new" review');
+
+    const get = await request(app).get('/decks/cap-test/schedule');
+    assert.equal(get.status, 200);
+    assert.equal(
+        get.body.cards.length,
+        2,
+        'daily cap (2) not exceeded: 1 graded + 1 freshly released',
+    );
+    const learningOrReview = get.body.cards.filter((c) => c.stage !== 'new');
+    const newCards = get.body.cards.filter((c) => c.stage === 'new');
+    assert.equal(learningOrReview.length, 1, 'cap-test:1 should appear as learning');
+    assert.equal(newCards.length, 1, 'cap holds: only one additional new card released today');
+});
+
 test('POST /sessions dedup retry returns stored snapshot unaffected by quota shift', async () => {
     applySeed(db, [CAP_TEST_DECK]);
 
