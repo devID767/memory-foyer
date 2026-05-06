@@ -95,13 +95,13 @@ Tag: `v0.3.5-backend`.
 
 ## Phase 5: Foyer 3D scene [CURRENT]
 
-- [ ] **5.1** Scene setup (floor, walls, lighting)
-- [ ] **5.2** URP post-processing (bloom, vignette)
-- [ ] **5.3** Deck-button prefab (UGUI: name + stats label + disabled state)
-- [ ] **5.4** `DeckSelectionView` MonoBehaviour (3 deck buttons + offline banner)
-- [ ] **5.5** `FoyerPresenter` pulls `IDeckRepository` + `IScheduleStore`, feeds `DeckSelectionView`
+- [x] **5.1** Scene setup (floor, walls, lighting) _(2026-05-06)_
+- [x] **5.2** URP post-processing (bloom, vignette) _(2026-05-06)_
+- [x] **5.3** Deck-button prefab (UGUI: name + stats label + disabled state) _(2026-05-06)_
+- [x] **5.4** `DeckSelectionView` MonoBehaviour (3 deck buttons + offline banner) _(2026-05-06)_
+- [x] **5.5** `FoyerPresenter` pulls `IDeckRepository` + `IScheduleStore`, feeds `DeckSelectionView` _(2026-05-06)_
 - [ ] **5.6** Cinemachine virtual camera with slow dolly (~6 s loop, non-interactive)
-- [ ] **5.7** EventSystem + GraphicRaycaster sanity check (UGUI overlay)
+- [x] **5.7** EventSystem + GraphicRaycaster sanity check (UGUI overlay) _(2026-05-06)_
 
 Tag: `v0.4-foyer-mvp`.
 
