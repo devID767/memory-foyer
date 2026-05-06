@@ -1,3 +1,4 @@
+using MemoryFoyer.Presentation.Foyer;
 using VContainer;
 using VContainer.Unity;
 
@@ -7,6 +8,9 @@ namespace MemoryFoyer.Composition
     {
         protected override void Configure(IContainerBuilder builder)
         {
+            builder.RegisterComponentInHierarchy<DeckSelectionView>();
+            builder.RegisterComponentInHierarchy<OfflineBannerView>();
+            builder.RegisterEntryPoint<FoyerPresenter>();
         }
     }
 }
