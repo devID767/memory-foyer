@@ -11,12 +11,14 @@ namespace MemoryFoyer.Infrastructure.ScriptableObjects
         [SerializeField] private string _displayName = "";
         [SerializeField, TextArea] private string _description = "";
         [SerializeField, Min(1)] private int _newCardsPerDay = 10;
+        [SerializeField] private Sprite? _icon;
         [SerializeField] private CardData[] _cards = Array.Empty<CardData>();
 
         public string DeckId => _deckId;
         public string DisplayName => _displayName;
         public string Description => _description;
         public int NewCardsPerDay => _newCardsPerDay;
+        public Sprite? Icon => _icon;
         public IReadOnlyList<CardData> Cards => _cards;
 
         private void OnValidate()

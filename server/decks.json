@@ -14,10 +14,31 @@
     "cardIds": ["idioms:1", "idioms:2", "idioms:3", "idioms:4", "idioms:5", "idioms:6", "idioms:7", "idioms:8", "idioms:9", "idioms:10", "idioms:11", "idioms:12", "idioms:13", "idioms:14", "idioms:15", "idioms:16", "idioms:17", "idioms:18", "idioms:19", "idioms:20", "idioms:21", "idioms:22", "idioms:23", "idioms:24", "idioms:25", "idioms:26", "idioms:27", "idioms:28", "idioms:29", "idioms:30"]
   },
   {
-    "deckId": "periodic",
-    "displayName": "Periodic Table 1-20",
-    "description": "The first 20 chemical elements by atomic number.",
+    "deckId": "movies",
+    "displayName": "Movies & Directors",
+    "description": "25 acclaimed films and the directors behind them.",
     "newCardsPerDay": 5,
-    "cardIds": ["periodic:1", "periodic:2", "periodic:3", "periodic:4", "periodic:5", "periodic:6", "periodic:7", "periodic:8", "periodic:9", "periodic:10", "periodic:11", "periodic:12", "periodic:13", "periodic:14", "periodic:15", "periodic:16", "periodic:17", "periodic:18", "periodic:19", "periodic:20"]
+    "cardIds": ["movies:1", "movies:2", "movies:3", "movies:4", "movies:5", "movies:6", "movies:7", "movies:8", "movies:9", "movies:10", "movies:11", "movies:12", "movies:13", "movies:14", "movies:15", "movies:16", "movies:17", "movies:18", "movies:19", "movies:20", "movies:21", "movies:22", "movies:23", "movies:24", "movies:25"]
+  },
+  {
+    "deckId": "myths",
+    "displayName": "Greek Myths",
+    "description": "20 figures from Greek mythology and the domain they rule.",
+    "newCardsPerDay": 5,
+    "cardIds": ["myths:1", "myths:2", "myths:3", "myths:4", "myths:5", "myths:6", "myths:7", "myths:8", "myths:9", "myths:10", "myths:11", "myths:12", "myths:13", "myths:14", "myths:15", "myths:16", "myths:17", "myths:18", "myths:19", "myths:20"]
+  },
+  {
+    "deckId": "paintings",
+    "displayName": "Famous Paintings",
+    "description": "25 iconic paintings and the artists who created them.",
+    "newCardsPerDay": 5,
+    "cardIds": ["paintings:1", "paintings:2", "paintings:3", "paintings:4", "paintings:5", "paintings:6", "paintings:7", "paintings:8", "paintings:9", "paintings:10", "paintings:11", "paintings:12", "paintings:13", "paintings:14", "paintings:15", "paintings:16", "paintings:17", "paintings:18", "paintings:19", "paintings:20", "paintings:21", "paintings:22", "paintings:23", "paintings:24", "paintings:25"]
+  },
+  {
+    "deckId": "quotes",
+    "displayName": "Famous Quotes",
+    "description": "25 well-known quotes and the people who said them.",
+    "newCardsPerDay": 5,
+    "cardIds": ["quotes:1", "quotes:2", "quotes:3", "quotes:4", "quotes:5", "quotes:6", "quotes:7", "quotes:8", "quotes:9", "quotes:10", "quotes:11", "quotes:12", "quotes:13", "quotes:14", "quotes:15", "quotes:16", "quotes:17", "quotes:18", "quotes:19", "quotes:20", "quotes:21", "quotes:22", "quotes:23", "quotes:24", "quotes:25"]
   }
 ]

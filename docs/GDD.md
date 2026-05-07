@@ -144,18 +144,21 @@ After working through the relearning queue (per §4.3), the card graduates back 
 
 A small library scene rendered in URP: bookshelf, desk lamp, dust motes, warm directional light (~2700 K), gentle bloom + vignette, slight color grading. Primitives + free assets only.
 
-**Camera:** one Cinemachine virtual camera with a slow dolly path (~6 s loop) — cinematic, never interactive.
+The focal element is a **corkboard** mounted on the wall: a wooden frame around a cork surface with the title "Memory Foyer" written diegetically across the top and the deck cards pinned across the body. Title typography is a chalky/sketchy serif (Cabin Sketch with TMP underlay) to read as in-world hand-lettering, not UI text.
 
-**No interactive 3D objects** — the backdrop exists for atmosphere and to justify URP/Cinemachine in the stack.
+**Camera:** one Cinemachine virtual camera with a slow dolly path (~6 s loop) — cinematic, never interactive. The dolly is framed so the corkboard stays legible across the whole loop.
 
-### 6.2 Deck Selection (2D overlay over backdrop)
+**No interactive 3D objects besides the deck cards** — the backdrop exists for atmosphere; the cards on the corkboard are the only interactive World Space elements.
 
-A `Canvas` (Screen Space – Overlay) in front of the rendered backdrop:
+### 6.2 Deck Selection (World Space cards on the corkboard)
 
-- Title: "Memory Foyer".
-- Three deck buttons stacked vertically. Each button: deck name + "N due / M total".
-- Empty deck (`due == 0`): button is disabled, sub-label reads **"All caught up"**.
-- Offline indicator: thin top banner "Server offline — stats may be stale" when the last `GET /decks` (or any subsequent `IScheduleStore` call) failed.
+The deck-selection UI is a `Canvas` in **World Space**, parented to the corkboard mesh in front of the rendered backdrop:
+
+- Title "Memory Foyer" is part of the corkboard itself (see §6.1), not a separate UI element.
+- Deck cards are spawned dynamically — one card per deck returned by `IDeckRepository.GetAllAsync()`, capped by `FoyerLayoutConfig.MaxDecksToShow` and laid out horizontally with configurable spacing along the corkboard.
+- Each card is a vertical paper flashcard: hand-drawn icon on the upper half, deck name (serif), and "{N} due · {M} total" on the lower half.
+- Empty deck (`due == 0`): card flips to its **back** sprite — title and icon hidden, sub-label reads **"All caught up"**, button non-interactive.
+- Offline indicator stays in **Screen Space – Overlay**: thin top banner "Server offline — stats may be stale" when the last `GET /decks` (or any subsequent `IScheduleStore` call) failed. Deliberately non-diegetic so the message reads regardless of camera framing.
 
 ### 6.3 Review Overlay (2D, dims foyer behind)
 
@@ -185,7 +188,7 @@ Decks are `ScriptableObject` assets under `Assets/Resources/Decks/`.
 
 **Three seed decks ship in the build:**
 1. **Capitals of Europe** — 44 cards, `NewCardsPerDay = 10`
-2. **Periodic Table 1–20** — 20 cards, `NewCardsPerDay = 5`
+2. **Greek Myths** — 20 cards, `NewCardsPerDay = 5`
 3. **English Idioms** — 30 cards, `NewCardsPerDay = 8`
 
 Currently decks are authored by editing `DeckAsset` directly in the Inspector (fields exposed via `[SerializeField]`); changes are pushed to the server through the **Deck Exporter** (`Tools → Memory Foyer → Export Decks`, `Assets/Editor/DeckExporter.cs`), which writes `server/decks.json`. A full `DeckAuthorWindow` (UI Toolkit) with CSV import is a Phase 7 task.
@@ -263,7 +266,8 @@ All UI strings collected here so tone stays consistent. Tone: terse, calm, no ex
 - **Palette:** library-at-night — dark walnut floor, off-white walls, warm key light (~2700 K).
 - **Motion:** all UI transitions use DOTween. No instant snaps.
 - **Audio:** none — no music, no SFX. Decision: avoid ruining first impression on muted reviewers.
-- **Typography:** TextMeshPro, one serif for card content, one sans-serif for UI.
+- **Typography:** TextMeshPro, three faces — **Lora** (serif) for card content and deck titles, **Cabin Sketch** for the corkboard "Memory Foyer" title (chalk effect via stock TMP Underlay, no custom shader), and **LiberationSans** (TMP default) for sans-serif UI chrome.
+- **Deck-card art:** hand-drawn doodle icons (single-line ink style) generated via Bing Image Creator (DALL-E 3) on a paper-textured background. Avoid glossy / glow / particle effects — the cards must read as paper, not as game cards.
 
 ## 11. Accessibility
 
@@ -335,7 +339,7 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 - **Offline is degraded, not full.** With a populated cache the client can start a session and queue uploads (idempotent on `sessionId`). First-run without server = empty UI. Long offline = the cached `dueAt` values drift behind reality (no schedules accumulate without round-trips).
 - **Reconnect order:** when the client comes back online with both pending uploads and a stale cache, `CachingScheduleStore` first drains the pending-uploads queue (one `POST /sessions` per session in FIFO order, idempotent), then performs a fresh `GET /decks/:id/schedule` and overwrites the cache. This guarantees the schedule the user sees reflects all locally-completed work.
 - **No retention mechanics.** No notifications, streaks, goals — by design. The app is a tool, not a service.
-- **Three fixed decks.** Adding a fourth requires authoring a `DeckAsset` and re-running the Deck Exporter (`Tools → Memory Foyer → Export Decks`) to refresh `server/decks.json`.
+- **Deck count is data-driven.** Adding a new deck requires authoring a `DeckAsset` (with optional `_icon`) under `Assets/Resources/Decks/`, re-running the Deck Exporter (`Tools → Memory Foyer → Export Decks`) to refresh `server/decks.json`, and — if visual layout requires it — adjusting `FoyerLayoutConfig.MaxDecksToShow` and `Spacing`. No scene edits are required; the foyer view spawns cards from the repository result.
 - **No localization.** UI is English-only.
 - **Mid-session hard-crash before upload loses pending grades in the queue.** `CachingScheduleStore` keeps pending uploads on disk in `JsonFileScheduleCache`, so a normal app close survives. A process crash before flush may drop the in-flight session. Acceptable for the portfolio; production would need a write-ahead log.
 

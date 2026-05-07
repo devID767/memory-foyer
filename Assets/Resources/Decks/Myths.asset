@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4e69eb125f847818dc773614d9bb37, type: 3}
+  m_Name: Myths
+  m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
+  _deckId: myths
+  _displayName: Greek Myths
+  _description: 20 figures from Greek mythology and the domain they rule.
+  _newCardsPerDay: 5
+  _icon: {fileID: 21300000, guid: 8ea5ebbc2e4434a5d841b854f0803935, type: 3}
+  _cards:
+  - _cardId: myths:1
+    _front: Zeus
+    _back: Sky and thunder
+  - _cardId: myths:2
+    _front: Poseidon
+    _back: Sea
+  - _cardId: myths:3
+    _front: Hades
+    _back: Underworld
+  - _cardId: myths:4
+    _front: Hera
+    _back: Marriage
+  - _cardId: myths:5
+    _front: Athena
+    _back: Wisdom
+  - _cardId: myths:6
+    _front: Apollo
+    _back: Sun and music
+  - _cardId: myths:7
+    _front: Artemis
+    _back: Hunt and moon
+  - _cardId: myths:8
+    _front: Ares
+    _back: War
+  - _cardId: myths:9
+    _front: Aphrodite
+    _back: Love and beauty
+  - _cardId: myths:10
+    _front: Hephaestus
+    _back: Forge
+  - _cardId: myths:11
+    _front: Hermes
+    _back: Messengers and travel
+  - _cardId: myths:12
+    _front: Dionysus
+    _back: Wine
+  - _cardId: myths:13
+    _front: Demeter
+    _back: Harvest
+  - _cardId: myths:14
+    _front: Hestia
+    _back: Hearth
+  - _cardId: myths:15
+    _front: Cronus
+    _back: Time
+  - _cardId: myths:16
+    _front: Gaia
+    _back: Earth
+  - _cardId: myths:17
+    _front: Helios
+    _back: Sun
+  - _cardId: myths:18
+    _front: Eros
+    _back: Desire
+  - _cardId: myths:19
+    _front: Nike
+    _back: Victory
+  - _cardId: myths:20
+    _front: Hypnos
+    _back: Sleep

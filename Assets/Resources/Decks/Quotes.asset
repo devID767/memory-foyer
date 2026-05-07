@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4e69eb125f847818dc773614d9bb37, type: 3}
+  m_Name: Quotes
+  m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
+  _deckId: quotes
+  _displayName: Famous Quotes
+  _description: 25 well-known quotes and the people who said them.
+  _newCardsPerDay: 5
+  _icon: {fileID: 21300000, guid: af2a36a81c1c447e48608ac51579d60c, type: 3}
+  _cards:
+  - _cardId: quotes:1
+    _front: '"I think, therefore I am."'
+    _back: Rene Descartes
+  - _cardId: quotes:2
+    _front: '"To be, or not to be."'
+    _back: William Shakespeare
+  - _cardId: quotes:3
+    _front: '"I have a dream."'
+    _back: Martin Luther King Jr.
+  - _cardId: quotes:4
+    _front: '"That''s one small step for man."'
+    _back: Neil Armstrong
+  - _cardId: quotes:5
+    _front: '"Veni, vidi, vici."'
+    _back: Julius Caesar
+  - _cardId: quotes:6
+    _front: '"E = mc^2."'
+    _back: Albert Einstein
+  - _cardId: quotes:7
+    _front: '"The only thing we have to fear is fear itself."'
+    _back: Franklin D. Roosevelt
+  - _cardId: quotes:8
+    _front: '"Ask not what your country can do for you."'
+    _back: John F. Kennedy
+  - _cardId: quotes:9
+    _front: '"Float like a butterfly, sting like a bee."'
+    _back: Muhammad Ali
+  - _cardId: quotes:10
+    _front: '"Imagination is more important than knowledge."'
+    _back: Albert Einstein
+  - _cardId: quotes:11
+    _front: '"Be the change you wish to see in the world."'
+    _back: Mahatma Gandhi
+  - _cardId: quotes:12
+    _front: '"The unexamined life is not worth living."'
+    _back: Socrates
+  - _cardId: quotes:13
+    _front: '"God is dead."'
+    _back: Friedrich Nietzsche
+  - _cardId: quotes:14
+    _front: '"Knowledge is power."'
+    _back: Francis Bacon
+  - _cardId: quotes:15
+    _front: '"Hell is other people."'
+    _back: Jean-Paul Sartre
+  - _cardId: quotes:16
+    _front: '"The medium is the message."'
+    _back: Marshall McLuhan
+  - _cardId: quotes:17
+    _front: '"Stay hungry, stay foolish."'
+    _back: Steve Jobs
+  - _cardId: quotes:18
+    _front: '"An eye for an eye makes the whole world blind."'
+    _back: Mahatma Gandhi
+  - _cardId: quotes:19
+    _front: '"I came, I saw, I conquered."'
+    _back: Julius Caesar
+  - _cardId: quotes:20
+    _front: '"Tear down this wall!"'
+    _back: Ronald Reagan
+  - _cardId: quotes:21
+    _front: '"The only true wisdom is in knowing you know nothing."'
+    _back: Socrates
+  - _cardId: quotes:22
+    _front: '"Power tends to corrupt."'
+    _back: Lord Acton
+  - _cardId: quotes:23
+    _front: '"Give me liberty, or give me death!"'
+    _back: Patrick Henry
+  - _cardId: quotes:24
+    _front: '"In the long run we are all dead."'
+    _back: John Maynard Keynes
+  - _cardId: quotes:25
+    _front: '"Elementary, my dear Watson."'
+    _back: Sherlock Holmes

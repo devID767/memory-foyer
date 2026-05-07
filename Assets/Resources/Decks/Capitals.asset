@@ -16,6 +16,7 @@ MonoBehaviour:
   _displayName: Capitals of Europe
   _description: 44 European countries and their capital cities.
   _newCardsPerDay: 10
+  _icon: {fileID: 21300000, guid: 7a408e4a73715497c8aebcc6b5b7f7e2, type: 3}
   _cards:
   - _cardId: capitals:1
     _front: Austria
@@ -127,7 +128,7 @@ MonoBehaviour:
     _back: Vaduz
   - _cardId: capitals:37
     _front: Moldova
-    _back: Chișinău
+    _back: "Chi\u0219in\u0103u"
   - _cardId: capitals:38
     _front: Monaco
     _back: Monaco

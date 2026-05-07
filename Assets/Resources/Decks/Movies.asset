@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4e69eb125f847818dc773614d9bb37, type: 3}
+  m_Name: Movies
+  m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
+  _deckId: movies
+  _displayName: Movies & Directors
+  _description: 25 acclaimed films and the directors behind them.
+  _newCardsPerDay: 5
+  _icon: {fileID: 21300000, guid: d1729f302248141bdbe63677f5021e69, type: 3}
+  _cards:
+  - _cardId: movies:1
+    _front: Pulp Fiction
+    _back: Quentin Tarantino
+  - _cardId: movies:2
+    _front: The Godfather
+    _back: Francis Ford Coppola
+  - _cardId: movies:3
+    _front: Citizen Kane
+    _back: Orson Welles
+  - _cardId: movies:4
+    _front: Psycho
+    _back: Alfred Hitchcock
+  - _cardId: movies:5
+    _front: 2001 A Space Odyssey
+    _back: Stanley Kubrick
+  - _cardId: movies:6
+    _front: Schindler's List
+    _back: Steven Spielberg
+  - _cardId: movies:7
+    _front: Goodfellas
+    _back: Martin Scorsese
+  - _cardId: movies:8
+    _front: Vertigo
+    _back: Alfred Hitchcock
+  - _cardId: movies:9
+    _front: Apocalypse Now
+    _back: Francis Ford Coppola
+  - _cardId: movies:10
+    _front: Seven Samurai
+    _back: Akira Kurosawa
+  - _cardId: movies:11
+    _front: 8 1/2
+    _back: Federico Fellini
+  - _cardId: movies:12
+    _front: Persona
+    _back: Ingmar Bergman
+  - _cardId: movies:13
+    _front: Blade Runner
+    _back: Ridley Scott
+  - _cardId: movies:14
+    _front: Inception
+    _back: Christopher Nolan
+  - _cardId: movies:15
+    _front: Parasite
+    _back: Bong Joon-ho
+  - _cardId: movies:16
+    _front: Spirited Away
+    _back: Hayao Miyazaki
+  - _cardId: movies:17
+    _front: There Will Be Blood
+    _back: Paul Thomas Anderson
+  - _cardId: movies:18
+    _front: No Country for Old Men
+    _back: Coen Brothers
+  - _cardId: movies:19
+    _front: Mulholland Drive
+    _back: David Lynch
+  - _cardId: movies:20
+    _front: The Shining
+    _back: Stanley Kubrick
+  - _cardId: movies:21
+    _front: Taxi Driver
+    _back: Martin Scorsese
+  - _cardId: movies:22
+    _front: Amelie
+    _back: Jean-Pierre Jeunet
+  - _cardId: movies:23
+    _front: City of God
+    _back: Fernando Meirelles
+  - _cardId: movies:24
+    _front: Oldboy
+    _back: Park Chan-wook
+  - _cardId: movies:25
+    _front: La Dolce Vita
+    _back: Federico Fellini

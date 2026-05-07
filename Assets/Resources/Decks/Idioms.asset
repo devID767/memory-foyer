@@ -16,6 +16,7 @@ MonoBehaviour:
   _displayName: English Idioms
   _description: 30 common English idioms and their meanings.
   _newCardsPerDay: 8
+  _icon: {fileID: 21300000, guid: 6050b9becaa334d1d90f38ae8181be65, type: 3}
   _cards:
   - _cardId: idioms:1
     _front: Break the ice
@@ -54,7 +55,7 @@ MonoBehaviour:
     _front: Hit the nail on the head
     _back: Describe a situation exactly
   - _cardId: idioms:13
-    _front: Pull someone’s leg
+    _front: "Pull someone\u2019s leg"
     _back: Tease or joke with someone
   - _cardId: idioms:14
     _front: The best of both worlds
@@ -84,7 +85,7 @@ MonoBehaviour:
     _front: Miss the boat
     _back: Lose an opportunity
   - _cardId: idioms:23
-    _front: "No pain, no gain"
+    _front: No pain, no gain
     _back: Effort is required to achieve results
   - _cardId: idioms:24
     _front: On the ball
