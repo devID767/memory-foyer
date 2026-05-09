@@ -11,11 +11,13 @@ namespace MemoryFoyer.Composition
     public sealed class FoyerLifetimeScope : LifetimeScope
     {
         private const string LayoutConfigResourcePath = "Config/FoyerLayoutConfig";
+        private const string PaletteConfigResourcePath = "Config/ArtPaletteConfig";
         private const string DecksResourceFolder = "Decks";
 
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterInstance(LoadLayoutConfig());
+            builder.RegisterInstance(LoadPaletteConfig());
             builder.RegisterInstance<IReadOnlyDictionary<DeckId, Sprite>>(BuildIconDictionary());
 
             builder.RegisterComponentInHierarchy<DeckSelectionView>();
@@ -30,6 +32,17 @@ namespace MemoryFoyer.Composition
             {
                 throw new MissingReferenceException(
                     $"FoyerLayoutConfig not found at Resources/{LayoutConfigResourcePath}.asset");
+            }
+            return config;
+        }
+
+        private static ArtPaletteConfig LoadPaletteConfig()
+        {
+            ArtPaletteConfig? config = Resources.Load<ArtPaletteConfig>(PaletteConfigResourcePath);
+            if (config == null)
+            {
+                throw new MissingReferenceException(
+                    $"ArtPaletteConfig not found at Resources/{PaletteConfigResourcePath}.asset");
             }
             return config;
         }

@@ -11,6 +11,7 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private Transform _cardsRoot = null!; // set in Inspector
 
         private FoyerLayoutConfig _config = null!;
+        private ArtPaletteConfig _palette = null!;
         private IReadOnlyDictionary<DeckId, Sprite> _icons = null!;
 
         private readonly List<DeckCardView> _cards = new();
@@ -19,9 +20,10 @@ namespace MemoryFoyer.Presentation.Foyer
         public event Action<DeckId>? DeckClicked;
 
         [Inject]
-        public void Construct(FoyerLayoutConfig config, IReadOnlyDictionary<DeckId, Sprite> icons)
+        public void Construct(FoyerLayoutConfig config, ArtPaletteConfig palette, IReadOnlyDictionary<DeckId, Sprite> icons)
         {
             _config = config;
+            _palette = palette;
             _icons = icons;
         }
 
@@ -77,7 +79,7 @@ namespace MemoryFoyer.Presentation.Foyer
             while (_cards.Count < count)
             {
                 DeckCardView card = Instantiate(_config.CardPrefab, _cardsRoot);
-                card.Configure(_config);
+                card.Configure(_config, _palette);
                 card.Clicked += OnChildClicked;
                 _cards.Add(card);
                 _baseYs.Add(card.transform.localPosition.y);
