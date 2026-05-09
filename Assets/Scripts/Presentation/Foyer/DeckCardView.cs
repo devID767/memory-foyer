@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace MemoryFoyer.Presentation.Foyer
 {
-    public sealed class DeckCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    public sealed class DeckCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
     {
         [SerializeField] private Button _button = null!; // set in Inspector
         [SerializeField] private TMP_Text _nameLabel = null!; // set in Inspector
@@ -17,7 +17,6 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private Image _paperImage = null!; // set in Inspector
         [SerializeField] private Sprite _faceSprite = null!; // set in Inspector
         [SerializeField] private Sprite _backSprite = null!; // set in Inspector
-        [SerializeField] private Shadow? _dropShadow;
 
         [SerializeField] private string _statsFormat = "<size=140%><color=#B05A2A><b>{0}</b></color></size> <alpha=#88>due · {1} total";
         [SerializeField] private string _caughtUpLabel = "All caught up";
@@ -28,8 +27,9 @@ namespace MemoryFoyer.Presentation.Foyer
         private DeckId _currentId;
         private bool _bound;
         private float _restRotationZ;
-        private Vector2 _baseShadowDistance;
         private Tween? _hoverTween;
+        private bool _isPressed;
+        private bool _isHovered;
 
         public void Configure(FoyerLayoutConfig config)
         {
@@ -39,10 +39,6 @@ namespace MemoryFoyer.Presentation.Foyer
         private void Awake()
         {
             _button.onClick.AddListener(OnButtonClicked);
-            if (_dropShadow != null)
-            {
-                _baseShadowDistance = _dropShadow.effectDistance;
-            }
         }
 
         private void OnDestroy()
@@ -87,15 +83,37 @@ namespace MemoryFoyer.Presentation.Foyer
             {
                 return;
             }
-            AnimateHover(true);
+            _isHovered = true;
+            RefreshState(_config != null ? _config.HoverDuration : 0.12f);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            AnimateHover(false);
+            _isHovered = false;
+            RefreshState(_config != null ? _config.HoverDuration : 0.12f);
         }
 
-        private void AnimateHover(bool hovered)
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (!_button.interactable)
+            {
+                return;
+            }
+            _isPressed = true;
+            RefreshState(0.07f);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (!_isPressed)
+            {
+                return;
+            }
+            _isPressed = false;
+            RefreshState(0.12f);
+        }
+
+        private void RefreshState(float duration)
         {
             if (_config == null)
             {
@@ -104,20 +122,15 @@ namespace MemoryFoyer.Presentation.Foyer
 
             _hoverTween?.Kill();
 
-            float duration = _config.HoverDuration;
-            float targetScale = hovered ? _config.HoverScale : 1f;
-            float targetRotation = hovered ? 0f : _restRotationZ;
+            float baseScale = _isHovered ? _config.HoverScale : 1f;
+            float targetScale = _isPressed ? baseScale * 0.94f : baseScale;
+            float targetRotation = _isHovered ? 0f : _restRotationZ;
 
             Sequence seq = DOTween.Sequence();
             seq.Join(transform.DOScale(targetScale, duration).SetEase(Ease.OutQuad));
             seq.Join(transform.DOLocalRotate(new Vector3(0f, 0f, targetRotation), duration).SetEase(Ease.OutQuad));
 
-            if (_dropShadow != null)
-            {
-                Vector2 shadowTarget = hovered ? _baseShadowDistance * 2f : _baseShadowDistance;
-                seq.Join(DOTween.To(() => _dropShadow.effectDistance, v => _dropShadow.effectDistance = v, shadowTarget, duration));
-            }
-
+            seq.Play();
             _hoverTween = seq;
         }
 

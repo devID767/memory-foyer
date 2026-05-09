@@ -15,3 +15,7 @@ MonoBehaviour:
   _cardPrefab: {fileID: 4353987800312743761, guid: 1a8152616d61347488bfcef22d8a5b49, type: 3}
   _spacing: 100
   _maxDecksToShow: 3
+  _maxTiltDegrees: 3
+  _maxYOffset: 22
+  _hoverScale: 1.05
+  _hoverDuration: 0.12

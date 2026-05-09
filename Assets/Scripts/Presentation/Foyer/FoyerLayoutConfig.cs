@@ -11,6 +11,7 @@ namespace MemoryFoyer.Presentation.Foyer
 
         [Header("Card jitter")]
         [SerializeField, Range(0f, 10f)] private float _maxTiltDegrees = 3f;
+        [SerializeField, Range(0f, 60f)] private float _maxYOffset = 12f;
 
         [Header("Card hover")]
         [SerializeField, Range(1f, 1.2f)] private float _hoverScale = 1.05f;
@@ -20,6 +21,7 @@ namespace MemoryFoyer.Presentation.Foyer
         public float Spacing => _spacing;
         public int MaxDecksToShow => _maxDecksToShow;
         public float MaxTiltDegrees => _maxTiltDegrees;
+        public float MaxYOffset => _maxYOffset;
         public float HoverScale => _hoverScale;
         public float HoverDuration => _hoverDuration;
     }
