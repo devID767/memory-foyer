@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Foyer.ArtPaletteConfig
   <Accent>k__BackingField: {r: 0.69, g: 0.353, b: 0.165, a: 1}
   <Paper>k__BackingField: {r: 0.949, g: 0.906, b: 0.816, a: 1}
-  <Rest>k__BackingField: {r: 0.431, g: 0.4, b: 0.341, a: 1}
+  <Rest>k__BackingField: {r: 0.754717, g: 0.52316314, b: 0.08899963, a: 1}
   <PaperRested>k__BackingField: {r: 0.867, g: 0.824, b: 0.733, a: 1}

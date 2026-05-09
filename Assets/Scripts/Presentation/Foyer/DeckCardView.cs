@@ -21,7 +21,7 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private Sprite _faceSprite = null!; // set in Inspector
         [SerializeField] private Sprite _backSprite = null!; // set in Inspector
 
-        private const string StatsFormat = "<size=140%><color=#{2}><b>{0}</b></color></size> <alpha=#95>due · {1} total";
+        private const string StatsFormat = "<size=200%><color=#{2}><b>{0}</b></color></size> <color=#{3}>due · of {1}</color>";
         private const string CaughtUpLabel = "All caught up";
 
         public event Action<DeckId>? Clicked;
@@ -30,6 +30,7 @@ namespace MemoryFoyer.Presentation.Foyer
         private ArtPaletteConfig _palette = null!;
         private string _accentHex = string.Empty;
         private string _restHex = string.Empty;
+        private string _inkHex = string.Empty;
         private RectTransform _rectTransform = null!;
 
         private DeckId _currentId;
@@ -57,6 +58,7 @@ namespace MemoryFoyer.Presentation.Foyer
             _palette = palette;
             _accentHex = ColorUtility.ToHtmlStringRGB(palette.Accent);
             _restHex = ColorUtility.ToHtmlStringRGB(palette.Rest);
+            _inkHex = ColorUtility.ToHtmlStringRGB(palette.Ink);
         }
 
         private void Awake()
@@ -95,7 +97,7 @@ namespace MemoryFoyer.Presentation.Foyer
 
             _nameLabel.text = model.DisplayName;
             _statsLabel.text = _interactable
-                ? string.Format(StatsFormat, model.DueCount, model.TotalCount, _accentHex)
+                ? string.Format(StatsFormat, model.DueCount, model.TotalCount, _accentHex, _inkHex)
                 : $"<color=#{_restHex}>{CaughtUpLabel}</color>";
 
             _nameLabel.gameObject.SetActive(_interactable);
