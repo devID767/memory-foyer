@@ -13,6 +13,9 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField, Range(0f, 10f)] private float _maxTiltDegrees = 3f;
         [SerializeField, Range(0f, 60f)] private float _maxYOffset = 12f;
 
+        [Header("Pin variants")]
+        [SerializeField] private Sprite[] _pinVariants = System.Array.Empty<Sprite>();
+
         [Header("Card hover")]
         [SerializeField, Range(1f, 1.2f)] private float _hoverScale = 1.05f;
         [SerializeField, Range(0.05f, 0.5f)] private float _hoverDuration = 0.12f;
@@ -22,6 +25,7 @@ namespace MemoryFoyer.Presentation.Foyer
         public int MaxDecksToShow => _maxDecksToShow;
         public float MaxTiltDegrees => _maxTiltDegrees;
         public float MaxYOffset => _maxYOffset;
+        public Sprite[] PinVariants => _pinVariants;
         public float HoverScale => _hoverScale;
         public float HoverDuration => _hoverDuration;
     }

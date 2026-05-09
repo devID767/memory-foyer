@@ -17,5 +17,11 @@ MonoBehaviour:
   _maxDecksToShow: 3
   _maxTiltDegrees: 3
   _maxYOffset: 22
+  _pinVariants:
+  - {fileID: 21300000, guid: 8b12a23dd552e491da7554781badcccb, type: 3}
+  - {fileID: 21300000, guid: cf0d4167f64e044acb133a8435accc65, type: 3}
+  - {fileID: 21300000, guid: b48788e042fcc4c7e977e4e4911725cd, type: 3}
+  - {fileID: 21300000, guid: 3c247b0fd1ed44b03863786d6a78299f, type: 3}
+  - {fileID: 21300000, guid: 259631baba4e542e1af7bbabe1cc08a3, type: 3}
   _hoverScale: 1.05
   _hoverDuration: 0.12

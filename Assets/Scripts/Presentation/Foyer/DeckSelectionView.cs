@@ -55,6 +55,11 @@ namespace MemoryFoyer.Presentation.Foyer
                 cardRt.localRotation = Quaternion.Euler(0f, 0f, tilt);
 
                 card.SetRestRotation(tilt);
+                Sprite[] pins = _config.PinVariants;
+                if (pins != null && pins.Length > 0)
+                {
+                    card.SetPin(pins[i % pins.Length]);
+                }
                 card.gameObject.SetActive(true);
 
                 Sprite? icon = _icons.TryGetValue(model.Id, out Sprite sprite) ? sprite : null;

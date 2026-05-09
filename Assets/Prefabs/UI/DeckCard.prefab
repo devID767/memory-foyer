@@ -225,9 +225,9 @@ MonoBehaviour:
   _statsLabel: {fileID: 3016184231901285756}
   _iconImage: {fileID: 7052281999232024606}
   _paperImage: {fileID: 5697994945503272102}
+  _pinImage: {fileID: 7100000000000000004}
   _faceSprite: {fileID: 21300000, guid: 47fbea0d6ffa841c6a1b6351a519a22f, type: 3}
   _backSprite: {fileID: 21300000, guid: b61fc8c80a925446ebb558f20fb82835, type: 3}
-  _dropShadow: {fileID: 4810843011858677182}
   _statsFormat: "<size=180%><color=#A33B1F><b>{0}</b></color></size> <size=85%>due 
     \xB7  of {1}"
   _caughtUpLabel: All caught up
@@ -835,8 +835,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16
-  m_fontSizeBase: 16
+  m_fontSize: 19
+  m_fontSizeBase: 19
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

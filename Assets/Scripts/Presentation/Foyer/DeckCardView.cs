@@ -15,6 +15,7 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private TMP_Text _statsLabel = null!; // set in Inspector
         [SerializeField] private Image _iconImage = null!; // set in Inspector
         [SerializeField] private Image _paperImage = null!; // set in Inspector
+        [SerializeField] private Image? _pinImage; // set in Inspector
         [SerializeField] private Sprite _faceSprite = null!; // set in Inspector
         [SerializeField] private Sprite _backSprite = null!; // set in Inspector
 
@@ -50,6 +51,15 @@ namespace MemoryFoyer.Presentation.Foyer
         public void SetRestRotation(float zDegrees)
         {
             _restRotationZ = zDegrees;
+        }
+
+        public void SetPin(Sprite pinSprite)
+        {
+            if (_pinImage == null)
+            {
+                return;
+            }
+            _pinImage.sprite = pinSprite;
         }
 
         public void Bind(DeckButtonModel model, Sprite? icon)
