@@ -8,9 +8,11 @@ using UnityEngine.UI;
 
 namespace MemoryFoyer.Presentation.Foyer
 {
-    public sealed class DeckCardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler
+    public sealed class DeckCardView : MonoBehaviour,
+        IPointerEnterHandler, IPointerExitHandler,
+        IPointerDownHandler, IPointerUpHandler,
+        IPointerClickHandler
     {
-        [SerializeField] private Button _button = null!; // set in Inspector
         [SerializeField] private TMP_Text _nameLabel = null!; // set in Inspector
         [SerializeField] private TMP_Text _statsLabel = null!; // set in Inspector
         [SerializeField] private Image _iconImage = null!; // set in Inspector
@@ -19,27 +21,35 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private Sprite _faceSprite = null!; // set in Inspector
         [SerializeField] private Sprite _backSprite = null!; // set in Inspector
 
-        [SerializeField] private string _statsFormat = "<size=140%><color=#{2}><b>{0}</b></color></size> <alpha=#88>due · {1} total";
-        [SerializeField] private string _caughtUpLabel = "All caught up";
-
-        private const float RestedIconLerp = 0.4f;
+        private const string StatsFormat = "<size=140%><color=#{2}><b>{0}</b></color></size> <alpha=#95>due · {1} total";
+        private const string CaughtUpLabel = "All caught up";
 
         public event Action<DeckId>? Clicked;
 
-        private FoyerLayoutConfig? _config;
-        private ArtPaletteConfig? _palette;
-        private string _accentHex = "B05A2A";
-        private string _restHex = "6E6657";
-        private DeckId _currentId;
-        private bool _bound;
-        private bool _isInteractable;
-        private float _restRotationZ;
-        private float _restPositionY;
-        private bool _restPositionCaptured;
-        private Tween? _hoverTween;
+        private FoyerLayoutConfig _config = null!;
+        private ArtPaletteConfig _palette = null!;
+        private string _accentHex = string.Empty;
+        private string _restHex = string.Empty;
         private RectTransform _rectTransform = null!;
+
+        private DeckId _currentId;
+        private bool _interactable;
+        private RestPose _rest;
         private bool _isPressed;
         private bool _isHovered;
+        private Tween? _activeTween;
+
+        private readonly struct RestPose
+        {
+            public Vector2 Position { get; }
+            public float RotationZ { get; }
+
+            public RestPose(Vector2 position, float rotationZ)
+            {
+                Position = position;
+                RotationZ = rotationZ;
+            }
+        }
 
         public void Configure(FoyerLayoutConfig config, ArtPaletteConfig palette)
         {
@@ -52,52 +62,45 @@ namespace MemoryFoyer.Presentation.Foyer
         private void Awake()
         {
             _rectTransform = (RectTransform)transform;
-            _button.onClick.AddListener(OnButtonClicked);
         }
 
         private void OnDestroy()
         {
-            _button.onClick.RemoveListener(OnButtonClicked);
-            _hoverTween?.Kill();
+            _activeTween?.Kill();
         }
 
-        public void SetRestRotation(float zDegrees)
+        public void ApplyLayout(Vector2 restPosition, float restRotationZ, Sprite? pin)
         {
-            _restRotationZ = zDegrees;
-        }
+            _rest = new RestPose(restPosition, restRotationZ);
 
-        public void ResetRestPositionCapture()
-        {
-            _restPositionCaptured = false;
-        }
+            _rectTransform.localPosition = new Vector3(restPosition.x, restPosition.y, 0f);
+            _rectTransform.localRotation = Quaternion.Euler(0f, 0f, restRotationZ);
+            _rectTransform.localScale = Vector3.one;
 
-        public void SetPin(Sprite pinSprite)
-        {
-            if (_pinImage == null)
+            if (_pinImage != null && pin != null)
             {
-                return;
+                _pinImage.sprite = pin;
             }
-            _pinImage.sprite = pinSprite;
+
+            _isHovered = false;
+            _isPressed = false;
         }
 
         public void Bind(DeckButtonModel model, Sprite? icon)
         {
             _currentId = model.Id;
-            _bound = true;
+            _interactable = model.DueCount > 0;
 
-            bool interactable = model.DueCount > 0;
-            _isInteractable = interactable;
-            _button.interactable = interactable;
-            _paperImage.sprite = interactable ? _faceSprite : _backSprite;
+            _paperImage.sprite = _interactable ? _faceSprite : _backSprite;
 
             _nameLabel.text = model.DisplayName;
-            _statsLabel.text = interactable
-                ? string.Format(_statsFormat, model.DueCount, model.TotalCount, _accentHex)
-                : $"<color=#{_restHex}>{_caughtUpLabel}</color>";
+            _statsLabel.text = _interactable
+                ? string.Format(StatsFormat, model.DueCount, model.TotalCount, _accentHex)
+                : $"<color=#{_restHex}>{CaughtUpLabel}</color>";
 
-            _nameLabel.gameObject.SetActive(interactable);
+            _nameLabel.gameObject.SetActive(_interactable);
 
-            bool showIcon = interactable && icon != null;
+            bool showIcon = _interactable && icon != null;
             _iconImage.gameObject.SetActive(showIcon);
             if (showIcon)
             {
@@ -110,58 +113,47 @@ namespace MemoryFoyer.Presentation.Foyer
 
         private void ApplyPaperTint()
         {
-            if (_palette == null)
-            {
-                return;
-            }
-
-            Color targetPaper = _isInteractable ? _palette.Paper : _palette.PaperRested;
-
+            Color targetPaper = _interactable ? _palette.Paper : _palette.PaperRested;
             targetPaper.a = _paperImage.color.a;
             _paperImage.color = targetPaper;
         }
 
         private void ApplyIconTint()
         {
-            if (_iconImage == null)
-            {
-                return;
-            }
-
-            _iconImage.color = _isInteractable
+            _iconImage.color = _interactable
                 ? Color.white
-                : Color.Lerp(Color.white, Color.gray, RestedIconLerp);
+                : Color.Lerp(Color.white, Color.gray, _config.RestedIconTintAmount);
         }
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (!_button.interactable)
+            if (!_interactable)
             {
                 return;
             }
-            if (!_restPositionCaptured)
-            {
-                _restPositionY = _rectTransform.localPosition.y;
-                _restPositionCaptured = true;
-            }
             _isHovered = true;
-            RefreshState(_config != null ? _config.HoverDuration : 0.12f);
+            RefreshState(_config.HoverDuration);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if (!_isHovered && !_isPressed)
+            {
+                return;
+            }
             _isHovered = false;
-            RefreshState(_config != null ? _config.HoverDuration : 0.12f);
+            _isPressed = false;
+            RefreshState(_config.HoverDuration);
         }
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (!_button.interactable)
+            if (!_interactable)
             {
                 return;
             }
             _isPressed = true;
-            RefreshState(0.07f);
+            RefreshState(_config.PressDuration);
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -171,23 +163,26 @@ namespace MemoryFoyer.Presentation.Foyer
                 return;
             }
             _isPressed = false;
-            RefreshState(0.12f);
+            RefreshState(_config.PressDuration);
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (!_interactable)
+            {
+                return;
+            }
+            Clicked?.Invoke(_currentId);
         }
 
         private void RefreshState(float duration)
         {
-            if (_config == null)
-            {
-                return;
-            }
-
-            _hoverTween?.Kill();
-            _rectTransform.DOKill();
+            _activeTween?.Kill();
 
             float baseScale = _isHovered ? _config.HoverScale : 1f;
-            float targetScale = _isPressed ? baseScale * 0.94f : baseScale;
-            float targetRotation = _isHovered ? 0f : _restRotationZ;
-            float targetY = _restPositionY + (_isHovered ? _config.HoverLiftAmount : 0f);
+            float targetScale = _isPressed ? baseScale * _config.PressScale : baseScale;
+            float targetRotation = _isHovered ? 0f : _rest.RotationZ;
+            float targetY = _rest.Position.y + (_isHovered ? _config.HoverLiftAmount : 0f);
 
             Sequence seq = DOTween.Sequence();
             seq.Join(_rectTransform.DOScale(targetScale, duration).SetEase(Ease.OutQuad));
@@ -195,17 +190,7 @@ namespace MemoryFoyer.Presentation.Foyer
             seq.Join(_rectTransform.DOLocalMoveY(targetY, duration).SetEase(Ease.OutQuad));
 
             seq.Play();
-            _hoverTween = seq;
-        }
-
-        private void OnButtonClicked()
-        {
-            if (!_bound)
-            {
-                return;
-            }
-
-            Clicked?.Invoke(_currentId);
+            _activeTween = seq;
         }
     }
 }

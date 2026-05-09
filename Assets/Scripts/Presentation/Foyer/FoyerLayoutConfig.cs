@@ -22,6 +22,11 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField, Range(0.05f, 0.5f)] private float _hoverDuration = 0.12f;
         [SerializeField, Range(0f, 40f)] private float _hoverLiftAmount = 12f;
 
+        [Header("Card Press")]
+        [SerializeField, Range(0.85f, 1f)] private float _pressScale = 0.94f;
+        [SerializeField, Range(0.02f, 0.3f)] private float _pressDuration = 0.07f;
+        [SerializeField, Range(0f, 1f)] private float _restedIconTintAmount = 0.4f;
+
         public DeckCardView CardPrefab => _cardPrefab;
         public float Spacing => _spacing;
         public int MaxDecksToShow => _maxDecksToShow;
@@ -32,5 +37,8 @@ namespace MemoryFoyer.Presentation.Foyer
         public float HoverScale => _hoverScale;
         public float HoverDuration => _hoverDuration;
         public float HoverLiftAmount => _hoverLiftAmount;
+        public float PressScale => _pressScale;
+        public float PressDuration => _pressDuration;
+        public float RestedIconTintAmount => _restedIconTintAmount;
     }
 }
