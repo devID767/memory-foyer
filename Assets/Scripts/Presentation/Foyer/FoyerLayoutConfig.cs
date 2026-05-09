@@ -6,12 +6,13 @@ namespace MemoryFoyer.Presentation.Foyer
     public sealed class FoyerLayoutConfig : ScriptableObject
     {
         [SerializeField] private DeckCardView _cardPrefab = null!; // set in Inspector
-        [SerializeField, Min(0f)] private float _spacing = 0.25f;
+        [SerializeField, Min(0f)] private float _spacing = 50f;
         [SerializeField, Min(1)] private int _maxDecksToShow = 3;
 
         [Header("Card jitter")]
         [SerializeField, Range(0f, 10f)] private float _maxTiltDegrees = 3f;
-        [SerializeField, Range(0f, 60f)] private float _maxYOffset = 12f;
+        [SerializeField, Range(0f, 200f)] private float _arcHeight = 60f;
+        [SerializeField, Range(0f, 30f)] private float _jitterAmount = 8f;
 
         [Header("Pin variants")]
         [SerializeField] private Sprite[] _pinVariants = System.Array.Empty<Sprite>();
@@ -19,14 +20,17 @@ namespace MemoryFoyer.Presentation.Foyer
         [Header("Card hover")]
         [SerializeField, Range(1f, 1.2f)] private float _hoverScale = 1.05f;
         [SerializeField, Range(0.05f, 0.5f)] private float _hoverDuration = 0.12f;
+        [SerializeField, Range(0f, 40f)] private float _hoverLiftAmount = 12f;
 
         public DeckCardView CardPrefab => _cardPrefab;
         public float Spacing => _spacing;
         public int MaxDecksToShow => _maxDecksToShow;
         public float MaxTiltDegrees => _maxTiltDegrees;
-        public float MaxYOffset => _maxYOffset;
+        public float ArcHeight => _arcHeight;
+        public float JitterAmount => _jitterAmount;
         public Sprite[] PinVariants => _pinVariants;
         public float HoverScale => _hoverScale;
         public float HoverDuration => _hoverDuration;
+        public float HoverLiftAmount => _hoverLiftAmount;
     }
 }

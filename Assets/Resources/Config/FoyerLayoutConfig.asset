@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: FoyerLayoutConfig
   m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Foyer.FoyerLayoutConfig
   _cardPrefab: {fileID: 4353987800312743761, guid: 1a8152616d61347488bfcef22d8a5b49, type: 3}
-  _spacing: 100
+  _spacing: 50
   _maxDecksToShow: 3
   _maxTiltDegrees: 3
-  _maxYOffset: 22
+  _arcHeight: 15
+  _jitterAmount: 8
   _pinVariants:
   - {fileID: 21300000, guid: 8b12a23dd552e491da7554781badcccb, type: 3}
   - {fileID: 21300000, guid: cf0d4167f64e044acb133a8435accc65, type: 3}
@@ -25,3 +26,4 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 259631baba4e542e1af7bbabe1cc08a3, type: 3}
   _hoverScale: 1.05
   _hoverDuration: 0.12
+  _hoverLiftAmount: 12

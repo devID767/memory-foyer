@@ -34,7 +34,10 @@ namespace MemoryFoyer.Presentation.Foyer
         private bool _bound;
         private bool _isInteractable;
         private float _restRotationZ;
+        private float _restPositionY;
+        private bool _restPositionCaptured;
         private Tween? _hoverTween;
+        private RectTransform _rectTransform = null!;
         private bool _isPressed;
         private bool _isHovered;
 
@@ -48,6 +51,7 @@ namespace MemoryFoyer.Presentation.Foyer
 
         private void Awake()
         {
+            _rectTransform = (RectTransform)transform;
             _button.onClick.AddListener(OnButtonClicked);
         }
 
@@ -60,6 +64,11 @@ namespace MemoryFoyer.Presentation.Foyer
         public void SetRestRotation(float zDegrees)
         {
             _restRotationZ = zDegrees;
+        }
+
+        public void ResetRestPositionCapture()
+        {
+            _restPositionCaptured = false;
         }
 
         public void SetPin(Sprite pinSprite)
@@ -86,7 +95,6 @@ namespace MemoryFoyer.Presentation.Foyer
                 ? string.Format(_statsFormat, model.DueCount, model.TotalCount, _accentHex)
                 : $"<color=#{_restHex}>{_caughtUpLabel}</color>";
 
-            // Title hidden on back-state; stats label doubles as the "All caught up" line.
             _nameLabel.gameObject.SetActive(interactable);
 
             bool showIcon = interactable && icon != null;
@@ -109,7 +117,6 @@ namespace MemoryFoyer.Presentation.Foyer
 
             Color targetPaper = _isInteractable ? _palette.Paper : _palette.PaperRested;
 
-            // Preserve sprite alpha from prefab default in case it's not 1.0.
             targetPaper.a = _paperImage.color.a;
             _paperImage.color = targetPaper;
         }
@@ -131,6 +138,11 @@ namespace MemoryFoyer.Presentation.Foyer
             if (!_button.interactable)
             {
                 return;
+            }
+            if (!_restPositionCaptured)
+            {
+                _restPositionY = _rectTransform.localPosition.y;
+                _restPositionCaptured = true;
             }
             _isHovered = true;
             RefreshState(_config != null ? _config.HoverDuration : 0.12f);
@@ -170,14 +182,17 @@ namespace MemoryFoyer.Presentation.Foyer
             }
 
             _hoverTween?.Kill();
+            _rectTransform.DOKill();
 
             float baseScale = _isHovered ? _config.HoverScale : 1f;
             float targetScale = _isPressed ? baseScale * 0.94f : baseScale;
             float targetRotation = _isHovered ? 0f : _restRotationZ;
+            float targetY = _restPositionY + (_isHovered ? _config.HoverLiftAmount : 0f);
 
             Sequence seq = DOTween.Sequence();
-            seq.Join(transform.DOScale(targetScale, duration).SetEase(Ease.OutQuad));
-            seq.Join(transform.DOLocalRotate(new Vector3(0f, 0f, targetRotation), duration).SetEase(Ease.OutQuad));
+            seq.Join(_rectTransform.DOScale(targetScale, duration).SetEase(Ease.OutQuad));
+            seq.Join(_rectTransform.DOLocalRotate(new Vector3(0f, 0f, targetRotation), duration).SetEase(Ease.OutQuad));
+            seq.Join(_rectTransform.DOLocalMoveY(targetY, duration).SetEase(Ease.OutQuad));
 
             seq.Play();
             _hoverTween = seq;

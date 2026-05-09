@@ -15,7 +15,6 @@ namespace MemoryFoyer.Presentation.Foyer
         private IReadOnlyDictionary<DeckId, Sprite> _icons = null!;
 
         private readonly List<DeckCardView> _cards = new();
-        private readonly List<float> _baseYs = new();
 
         public event Action<DeckId>? DeckClicked;
 
@@ -42,35 +41,64 @@ namespace MemoryFoyer.Presentation.Foyer
 
             EnsureCardCount(count);
 
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                _cards[i].gameObject.SetActive(i < count);
+            }
+
+            LayoutCards(count);
+
             for (int i = 0; i < count; i++)
             {
                 DeckButtonModel model = models[i];
                 DeckCardView card = _cards[i];
 
-                RectTransform cardRt = (RectTransform)card.transform;
-                float baseY = _baseYs[i];
-                float yOffset = ComputeYOffset(i, count);
-                cardRt.localPosition = new Vector3(cardRt.localPosition.x, baseY + yOffset, 0f);
-                cardRt.localScale = Vector3.one;
-
-                float tilt = ComputeTilt(i, count);
-                cardRt.localRotation = Quaternion.Euler(0f, 0f, tilt);
-
-                card.SetRestRotation(tilt);
+                card.ResetRestPositionCapture();
                 Sprite[] pins = _config.PinVariants;
                 if (pins != null && pins.Length > 0)
                 {
                     card.SetPin(pins[i % pins.Length]);
                 }
-                card.gameObject.SetActive(true);
 
                 Sprite? icon = _icons.TryGetValue(model.Id, out Sprite sprite) ? sprite : null;
                 card.Bind(model, icon);
             }
+        }
 
-            for (int i = count; i < _cards.Count; i++)
+        private void LayoutCards(int count)
+        {
+            if (count <= 0)
             {
-                _cards[i].gameObject.SetActive(false);
+                return;
+            }
+
+            float spacing = _config.Spacing;
+
+            float totalWidth = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                totalWidth += ((RectTransform)_cards[i].transform).rect.width;
+            }
+            totalWidth += spacing * (count - 1);
+
+            float cursorX = -totalWidth * 0.5f;
+
+            for (int i = 0; i < count; i++)
+            {
+                RectTransform cardRt = (RectTransform)_cards[i].transform;
+                // Pivot is centered (0.5, 0.5) on the card prefab — place anchor on card center.
+                float width = cardRt.rect.width;
+                float x = cursorX + width * 0.5f;
+                float y = ComputeYOffset(i, count);
+
+                cardRt.localPosition = new Vector3(x, y, 0f);
+                cardRt.localScale = Vector3.one;
+
+                float tilt = ComputeTilt(i, count);
+                cardRt.localRotation = Quaternion.Euler(0f, 0f, tilt);
+                _cards[i].SetRestRotation(tilt);
+
+                cursorX += width + spacing;
             }
         }
 
@@ -82,7 +110,6 @@ namespace MemoryFoyer.Presentation.Foyer
                 card.Configure(_config, _palette);
                 card.Clicked += OnChildClicked;
                 _cards.Add(card);
-                _baseYs.Add(card.transform.localPosition.y);
             }
         }
 
@@ -106,13 +133,25 @@ namespace MemoryFoyer.Presentation.Foyer
 
         private float ComputeYOffset(int index, int count)
         {
-            float max = _config.MaxYOffset;
-            if (max <= 0f || count <= 0)
+            if (count <= 0)
             {
                 return 0f;
             }
 
-            return (Hash01(index, salt: 17) * 2f - 1f) * max;
+            float arc = 0f;
+            if (count > 1 && _config.ArcHeight > 0f)
+            {
+                float t = (float)index / (count - 1) * 2f - 1f;
+                arc = (1f - t * t) * _config.ArcHeight;
+            }
+
+            float jitter = 0f;
+            if (_config.JitterAmount > 0f)
+            {
+                jitter = (Hash01(index, salt: 17) - 0.5f) * _config.JitterAmount;
+            }
+
+            return arc + jitter;
         }
 
         private static float Hash01(int index, int salt)
