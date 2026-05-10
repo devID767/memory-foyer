@@ -93,7 +93,7 @@ Tag: `v0.3.5-backend`.
 - [x] **4.2** `FoyerLifetimeScope` (initially empty, populated in Phase 5/6) _(2026-05-04)_
 - [x] **4.3** Composition smoke-test `IStartable` _(2026-05-04)_
 
-## Phase 5: Foyer 3D scene [CURRENT]
+## Phase 5: Foyer 3D scene
 
 - [x] **5.1** Scene setup (floor, walls, lighting) _(2026-05-06)_
 - [x] **5.2** URP post-processing (bloom, vignette) _(2026-05-06)_
@@ -105,7 +105,7 @@ Tag: `v0.3.5-backend`.
 
 Tag: `v0.4-foyer-mvp`.
 
-## Phase 6: Review UI overlay
+## Phase 6: Review UI overlay [CURRENT]
 
 - [ ] **6.1** Canvas layout with card display + 4 grade buttons
 - [ ] **6.2** `ReviewView` MonoBehaviour
