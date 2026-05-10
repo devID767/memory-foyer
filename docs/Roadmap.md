@@ -100,7 +100,7 @@ Tag: `v0.3.5-backend`.
 - [x] **5.3** Deck-button prefab (UGUI: name + stats label + disabled state) _(2026-05-06)_
 - [x] **5.4** `DeckSelectionView` MonoBehaviour (3 deck buttons + offline banner) _(2026-05-06)_
 - [x] **5.5** `FoyerPresenter` pulls `IDeckRepository` + `IScheduleStore`, feeds `DeckSelectionView` _(2026-05-06)_
-- [ ] **5.6** Cinemachine virtual camera with slow dolly (~6 s loop, non-interactive)
+- [~] **5.6** ~~Cinemachine virtual camera with slow dolly (~6 s loop, non-interactive)~~ — cancelled 2026-05-10: dolly motion looked off; replaced with Cinemachine Basic Multi Channel Perlin (idle breath). See [GDD.md](GDD.md).
 - [x] **5.7** EventSystem + GraphicRaycaster sanity check (UGUI overlay) _(2026-05-06)_
 
 Tag: `v0.4-foyer-mvp`.

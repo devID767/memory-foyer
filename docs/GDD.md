@@ -28,7 +28,7 @@ It is built as a portfolio piece: the visible game is intentionally small so the
 ```
 Open app
   ↓
-3D backdrop loads → slow Cinemachine dolly through library scene
+3D backdrop loads → Cinemachine vcam with idle Perlin breath (no dolly) holds the corkboard in frame
 Canvas overlay shows 3 deck buttons, each: name + "N due / M total"
   ↓
 Player clicks a deck
@@ -146,7 +146,7 @@ A small library scene rendered in URP: bookshelf, desk lamp, dust motes, warm di
 
 The focal element is a **corkboard** mounted on the wall: a wooden frame around a cork surface with the title "Memory Foyer" written diegetically across the top and the deck cards pinned across the body. Title typography is a chalky/sketchy serif (Cabin Sketch with TMP underlay) to read as in-world hand-lettering, not UI text.
 
-**Camera:** one Cinemachine virtual camera with a slow dolly path (~6 s loop) — cinematic, never interactive. The dolly is framed so the corkboard stays legible across the whole loop.
+**Camera:** one Cinemachine virtual camera with a subtle idle "breath" — non-interactive. Originally specced as a slow dolly path (~6 s loop), but the dolly motion read as wandering and pulled focus away from the corkboard. Replaced (2026-05-10) with a **Cinemachine Basic Multi Channel Perlin** noise profile producing low-amplitude positional/rotational drift, so the frame feels alive while the corkboard stays centered and legible at all times.
 
 **No interactive 3D objects besides the deck cards** — the backdrop exists for atmosphere; the cards on the corkboard are the only interactive World Space elements.
 
