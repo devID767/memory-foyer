@@ -5,6 +5,13 @@
 
 INPUT=$(cat)
 
+# One-shot "user reviewed, none apply" bypass — consumed on first use
+REVIEW_SKIP_FLAG=".claude/backlog-review-skipped"
+if [ -f "$REVIEW_SKIP_FLAG" ]; then
+  rm -f "$REVIEW_SKIP_FLAG"
+  exit 0
+fi
+
 if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
@@ -93,8 +100,9 @@ fi
   echo "Claude: via AskUserQuestion (multiSelect) ask the user which backlog items to close. For each confirmed:"
   echo "  - Run /done <ID> for each selected backlog item"
   echo "Then 'git add' the modified Backlog.md, and retry the same git commit (identical message)."
-  echo "If user declines everything, retry commit as-is to unblock."
-  echo "If no match seems correct, retry commit immediately without interaction."
+  echo "If user declines everything OR no match seems correct:"
+  echo "  - Run: touch .claude/backlog-review-skipped"
+  echo "  - Then retry the same git commit (the flag is consumed on first use and the hook will allow it)"
   echo "Do not mention this hook ran unless user interaction is actually needed."
 } >&2
 
