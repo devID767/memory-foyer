@@ -18,8 +18,6 @@ namespace MemoryFoyer.Presentation.Foyer
         [SerializeField] private Image _iconImage = null!; // set in Inspector
         [SerializeField] private Image _paperImage = null!; // set in Inspector
         [SerializeField] private Image? _pinImage; // set in Inspector
-        [SerializeField] private Sprite _faceSprite = null!; // set in Inspector
-        [SerializeField] private Sprite _backSprite = null!; // set in Inspector
 
         private const string StatsFormat = "<size=200%><color=#{2}><b>{0}</b></color></size> <color=#{3}>due · of {1}</color>";
         private const string CaughtUpLabel = "All caught up";
@@ -92,8 +90,6 @@ namespace MemoryFoyer.Presentation.Foyer
         {
             _currentId = model.Id;
             _interactable = model.DueCount > 0;
-
-            _paperImage.sprite = _interactable ? _faceSprite : _backSprite;
 
             _nameLabel.text = model.DisplayName;
             _statsLabel.text = _interactable

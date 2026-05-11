@@ -19,11 +19,14 @@ MonoBehaviour:
   _arcHeight: 15
   _jitterAmount: 8
   _pinVariants:
-  - {fileID: 21300000, guid: 8b12a23dd552e491da7554781badcccb, type: 3}
-  - {fileID: 21300000, guid: cf0d4167f64e044acb133a8435accc65, type: 3}
-  - {fileID: 21300000, guid: b48788e042fcc4c7e977e4e4911725cd, type: 3}
-  - {fileID: 21300000, guid: 3c247b0fd1ed44b03863786d6a78299f, type: 3}
-  - {fileID: 21300000, guid: 259631baba4e542e1af7bbabe1cc08a3, type: 3}
+  - {fileID: 21300000, guid: 935adc20607b24fc091f874cd6453b70, type: 3}
+  - {fileID: 21300000, guid: de560173a6c6a466ab687a2a364e2507, type: 3}
+  - {fileID: 21300000, guid: ba13e5bb97d0d4e3cb9f713e8012a624, type: 3}
+  - {fileID: 21300000, guid: 0e67a63fe24e84d92b29636fc85dc00d, type: 3}
+  - {fileID: 21300000, guid: b10f3a45628f14f34af22462cddf7915, type: 3}
   _hoverScale: 1.05
   _hoverDuration: 0.12
   _hoverLiftAmount: 12
+  _pressScale: 0.94
+  _pressDuration: 0.07
+  _restedIconTintAmount: 0.4
