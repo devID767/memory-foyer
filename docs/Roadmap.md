@@ -108,7 +108,7 @@ Tag: `v0.4-foyer-mvp`.
 ## Phase 6: Review UI overlay [CURRENT]
 
 - [x] **6.1** (2026-05-11 → 2026-05-11) Canvas layout with card display + 4 grade buttons
-- [ ] **6.2** `ReviewView` MonoBehaviour
+- [x] **6.2** (2026-05-12 → 2026-05-12) `ReviewView` MonoBehaviour
 - [ ] **6.3** `ReviewPresenter` wired to `IReviewSessionService`
 - [ ] **6.4** Register both presenters in `FoyerLifetimeScope`
 - [ ] **6.5** Deck-button stats refresh on `SessionFinishedEvent`

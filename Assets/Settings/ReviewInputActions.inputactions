@@ -1,0 +1,135 @@
+{
+    "version": 1,
+    "name": "ReviewInputActions",
+    "maps": [
+        {
+            "name": "Review",
+            "id": "11f6ff8e-8d9a-4436-89eb-f66c10ceaa30",
+            "actions": [
+                {
+                    "name": "Reveal",
+                    "type": "Button",
+                    "id": "9e549aa9-f6fd-45f0-9cd2-912fe180e4d2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Grade1",
+                    "type": "Button",
+                    "id": "56fe81ed-15af-48b6-9c29-57a1d18d867f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Grade2",
+                    "type": "Button",
+                    "id": "474b54b0-a7f8-4d1e-ad19-589c1259079e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Grade3",
+                    "type": "Button",
+                    "id": "f3f9f09f-09b1-4c73-a6e2-e2cec38ce0f4",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Grade4",
+                    "type": "Button",
+                    "id": "ca7c42a3-5149-4be8-a10f-2053ddeb79b0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Close",
+                    "type": "Button",
+                    "id": "f210e453-698a-4508-ad53-1bea29925dc2",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "3b4bdac7-6508-4a17-90d9-4ff5de2afc47",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Reveal",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5affdca1-39ca-4896-a42f-9fce8274eaa4",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grade1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a5b57432-554f-422c-92b6-542f5293b257",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grade2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d5e6f4e4-8d0c-4528-be2f-4c9e9b264071",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grade3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8559d3bb-98d6-4c4d-b0e6-2e4266f36256",
+                    "path": "<Keyboard>/4",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Grade4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6ee8002f-1eb0-4750-b106-5f30a831890c",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Close",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

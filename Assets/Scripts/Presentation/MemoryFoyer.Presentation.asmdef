@@ -5,9 +5,12 @@
         "MemoryFoyer.Application",
         "MemoryFoyer.Domain",
         "UniTask",
+        "UniTask.DOTween",
+        "DOTween.Modules",
         "MessagePipe",
         "Unity.TextMeshPro",
         "Unity.Cinemachine",
+        "Unity.InputSystem",
         "VContainer",
         "MessagePipe.VContainer"
     ],
