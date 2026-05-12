@@ -9,10 +9,14 @@ namespace MemoryFoyer.Presentation.Review
         private readonly RectTransform _cardRoot;
         private readonly ReviewAnimationConfig _config;
 
+        private readonly float _originScaleX;
+
         public CardFlipAnimator(RectTransform cardRoot, ReviewAnimationConfig config)
         {
             _cardRoot = cardRoot;
             _config = config;
+
+            _originScaleX = _cardRoot.localScale.x;
         }
 
         public Sequence BuildFlip(Action onPivot)
@@ -22,7 +26,7 @@ namespace MemoryFoyer.Presentation.Review
             Sequence seq = DOTween.Sequence();
             seq.Append(_cardRoot.DOScaleX(0f, half).SetEase(_config.FlipEase));
             seq.AppendCallback(() => onPivot());
-            seq.Append(_cardRoot.DOScaleX(1f, half).SetEase(_config.FlipEase));
+            seq.Append(_cardRoot.DOScaleX(_originScaleX, half).SetEase(_config.FlipEase));
             return seq;
         }
 

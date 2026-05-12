@@ -20,7 +20,8 @@ namespace MemoryFoyer.Presentation.Foyer
         private readonly IClock _clock;
         private readonly IPublisher<DeckSelectedEvent> _deckSelectedPublisher;
         private readonly ISubscriber<SessionFinishedEvent> _sessionFinishedSubscriber;
-        private readonly DeckSelectionView _deckSelectionView;
+        private readonly ISubscriber<BackToFoyerRequested> _backToFoyerSubscriber;
+        private readonly FoyerScreen _screen;
         private readonly OfflineBannerView _offlineBannerView;
 
         public FoyerPresenter(
@@ -29,7 +30,8 @@ namespace MemoryFoyer.Presentation.Foyer
             IClock clock,
             IPublisher<DeckSelectedEvent> deckSelectedPublisher,
             ISubscriber<SessionFinishedEvent> sessionFinishedSubscriber,
-            DeckSelectionView deckSelectionView,
+            ISubscriber<BackToFoyerRequested> backToFoyerSubscriber,
+            FoyerScreen screen,
             OfflineBannerView offlineBannerView)
         {
             _deckRepository = deckRepository;
@@ -37,7 +39,8 @@ namespace MemoryFoyer.Presentation.Foyer
             _clock = clock;
             _deckSelectedPublisher = deckSelectedPublisher;
             _sessionFinishedSubscriber = sessionFinishedSubscriber;
-            _deckSelectionView = deckSelectionView;
+            _backToFoyerSubscriber = backToFoyerSubscriber;
+            _screen = screen;
             _offlineBannerView = offlineBannerView;
         }
 
@@ -46,13 +49,26 @@ namespace MemoryFoyer.Presentation.Foyer
             IDisposable sessionFinishedSubscription = _sessionFinishedSubscriber.Subscribe(
                 _ => RefreshAsync(cancellation).Forget());
 
-            _deckSelectionView.DeckClicked += OnDeckClicked;
+            IDisposable backToFoyerSubscription = _backToFoyerSubscriber.Subscribe(
+                _ =>
+                {
+                    _screen.Show();
+                    // TODO 6.x: re-probe reachability on BackToFoyer
+                    RefreshAsync(cancellation).Forget();
+                });
+
+            _screen.DeckClicked += OnDeckClicked;
 
             cancellation.Register(() =>
             {
-                _deckSelectionView.DeckClicked -= OnDeckClicked;
+                _screen.DeckClicked -= OnDeckClicked;
                 sessionFinishedSubscription.Dispose();
+                backToFoyerSubscription.Dispose();
             });
+
+            // Show the foyer canvas immediately so the user sees it during the initial
+            // reachability probe rather than staring at a blank scene.
+            _screen.Show();
 
             bool reachable = await _scheduleStore.IsServerReachableAsync(cancellation);
             _offlineBannerView.SetVisible(!reachable);
@@ -62,7 +78,10 @@ namespace MemoryFoyer.Presentation.Foyer
 
         private void OnDeckClicked(DeckId deckId)
         {
+            // Publish before Hide so any synchronous subscriber observes the "foyer visible"
+            // state at publish-time.
             _deckSelectedPublisher.Publish(new DeckSelectedEvent(deckId));
+            _screen.Hide();
         }
 
         private async UniTask RefreshAsync(CancellationToken ct)
@@ -81,7 +100,7 @@ namespace MemoryFoyer.Presentation.Foyer
                 models[i] = new DeckButtonModel(deck.Id, deck.DisplayName, dueCount, deck.Cards.Count);
             }
 
-            _deckSelectionView.Bind(models);
+            _screen.Bind(models);
         }
     }
 }

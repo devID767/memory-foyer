@@ -21,9 +21,13 @@ namespace MemoryFoyer.Composition
             builder.RegisterInstance(LoadPaletteConfig());
             builder.RegisterInstance<IReadOnlyDictionary<DeckId, Sprite>>(BuildIconDictionary());
 
-            builder.RegisterComponentInHierarchy<DeckSelectionView>();
+            builder.RegisterComponentInHierarchy<FoyerScreen>();
             builder.RegisterComponentInHierarchy<OfflineBannerView>();
+            builder.RegisterComponentInHierarchy<ReviewScreen>();
+            builder.RegisterComponentInHierarchy<InputSystemReviewInputSource>()
+                .AsImplementedInterfaces();
             builder.RegisterEntryPoint<FoyerPresenter>();
+            builder.RegisterEntryPoint<ReviewPresenter>();
         }
 
         private static FoyerLayoutConfig LoadLayoutConfig()

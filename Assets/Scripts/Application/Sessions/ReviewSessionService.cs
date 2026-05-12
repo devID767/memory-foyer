@@ -53,6 +53,7 @@ namespace MemoryFoyer.Application.Sessions
         public SessionState State => _state;
         public int Total => _total;
         public int Remaining => _state == SessionState.Playing ? _queue.Count : 0;
+        public int ReviewsCompleted => _reviews.Count;
 
         public ReviewCard? CurrentCard
         {

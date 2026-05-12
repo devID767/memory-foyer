@@ -30,6 +30,7 @@ namespace MemoryFoyer.Composition
             builder.RegisterMessageBroker<SessionStartedEvent>(options);
             builder.RegisterMessageBroker<CardReviewedEvent>(options);
             builder.RegisterMessageBroker<SessionFinishedEvent>(options);
+            builder.RegisterMessageBroker<BackToFoyerRequested>(options);
 
             ServerConfigAsset? serverAsset = Resources.Load<ServerConfigAsset>("Config/ServerConfig");
             if (serverAsset == null)

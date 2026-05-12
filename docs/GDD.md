@@ -33,7 +33,7 @@ Canvas overlay shows 3 deck buttons, each: name + "N due / M total"
   ↓
 Player clicks a deck
   ↓
-Review overlay opens (foyer 3D dims behind it)
+Review screen opens (foyer canvas is hidden, review canvas activates in its place)
   ↓
 For each due card:
     Show front (TMP rich text) → tap/Space to flip → back appears
@@ -160,14 +160,16 @@ The deck-selection UI is a `Canvas` in **World Space**, parented to the corkboar
 - Empty deck (`due == 0`): card flips to its **back** sprite — title and icon hidden, sub-label reads **"All caught up"**, button non-interactive.
 - Offline indicator stays in **Screen Space – Overlay**: thin top banner "Server offline — stats may be stale" when the last `GET /decks` (or any subsequent `IScheduleStore` call) failed. Deliberately non-diegetic so the message reads regardless of camera framing.
 
-### 6.3 Review Overlay (2D, dims foyer behind)
+### 6.3 Review Screen (2D, replaces foyer canvas)
 
-Single Canvas, screen-space overlay:
+Selecting a deck performs a full-screen swap from the foyer canvas to the review canvas, owned by the `FoyerScreen` and `ReviewScreen` aggregators. `ReviewPresenter` publishes `BackToFoyerRequested` when the user dismisses the summary; `FoyerPresenter` subscribes to re-show the foyer canvas and refresh the deck stats.
+
+Single Canvas (Screen Space – Overlay render mode), aggregated as `ReviewScreen`:
 - Top: deck name + progress (`3 / 12`).
 - Center: card front (TextMeshPro, supports built-in `<b>`, `<i>`, `<color>` tags). Tap or Space → DOTween flip → back.
 - Bottom: four buttons — Again / Hard / Good / Easy — also bound to keys 1–4.
 - Esc closes the session.
-- Backdrop fades from full to ~30% brightness while overlay is open.
+- Foyer canvas is deactivated for the duration of the session — no behind-scene dimming required.
 
 ## 7. Content — Decks
 
@@ -241,14 +243,14 @@ All UI strings collected here so tone stays consistent. Tone: terse, calm, no ex
 - Offline banner (top of foyer): `Server offline — stats may be stale`
 - Server unreachable on first load: `Couldn't reach server. Click to retry.`
 
-**Review overlay**
+**Review screen**
 - Progress: `{current} / {total}`
 - Flip prompt (faint, under card): `Tap or press Space`
 - Grade buttons: `Again`, `Hard`, `Good`, `Easy`
 - Key hints under each button: `1`, `2`, `3`, `4`
 - Quit hint (small, top-right): `Esc`
 
-**Session end (brief overlay before returning to foyer)**
+**Session end (brief summary panel before returning to foyer)**
 - Line 1: `{N} reviewed`
 - Line 2: `See you tomorrow.`
 
@@ -300,7 +302,7 @@ A cross-reference between mechanics in this document and the layer that owns the
 | `DeckAsset` → Domain `Deck` mapping | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` (private mapper, no separate file) |
 | Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerView.cs` |
 | Deck-selection Canvas | Presentation | `Presentation/Foyer/DeckSelectionView.cs` |
-| Review overlay UI + DOTween | Presentation | `Presentation/Review/ReviewView.cs` |
+| Review screen UI + DOTween | Presentation | `Presentation/Review/ReviewScreen.cs`, `Presentation/Review/ReviewPresenter.cs` |
 | Offline banner | Presentation | `Presentation/Foyer/OfflineBannerView.cs` |
 | DI registrations | Composition | `Composition/ProjectLifetimeScope.cs`, `FoyerLifetimeScope.cs` |
 | MessagePipe events on the bus | App → Pres | `DeckSelectedEvent`, `SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent` |

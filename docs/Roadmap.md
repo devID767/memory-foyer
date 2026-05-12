@@ -109,8 +109,8 @@ Tag: `v0.4-foyer-mvp`.
 
 - [x] **6.1** (2026-05-11 → 2026-05-11) Canvas layout with card display + 4 grade buttons
 - [x] **6.2** (2026-05-12 → 2026-05-12) `ReviewView` MonoBehaviour
-- [ ] **6.3** `ReviewPresenter` wired to `IReviewSessionService`
-- [ ] **6.4** Register both presenters in `FoyerLifetimeScope`
+- [x] **6.3** (2026-05-12 → 2026-05-12) `ReviewPresenter` wired to `IReviewSessionService`
+- [x] **6.4** (2026-05-12 → 2026-05-12) Register both presenters in `FoyerLifetimeScope`
 - [ ] **6.5** Deck-button stats refresh on `SessionFinishedEvent`
 - [ ] **6.6** End-to-end smoke (server + Unity Play; verify offline-cache fallback by stopping server mid-session)
 

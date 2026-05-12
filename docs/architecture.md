@@ -47,7 +47,7 @@ flowchart TB
 VContainer with two scopes:
 
 - **`ProjectLifetimeScope`** — long-lived, holds the SM-2 algorithm singleton, `IClock`, `ServerConfig`, `IDeckRepository`, `IHttpClient`, the `IScheduleStore` triple (`HttpScheduleStore` primary + `JsonFileScheduleCache` fallback wired through `CachingScheduleStore`), `IAnalyticsService`, `IReviewSessionService`. Lives in a persistent scene loaded via `DontDestroyOnLoad` (or via `parentReference` from the per-scene scope).
-- **`FoyerLifetimeScope`** — per-scene, registers `FoyerPresenter` and `ReviewPresenter` as `IAsyncStartable` entry points, plus the `DeckSelectionView` (with its child `DeckButtonView[]`) and `ReviewView` MonoBehaviour references collected via `RegisterComponentInHierarchy<T>()` (or assigned through SerializeField on the scope itself).
+- **`FoyerLifetimeScope`** — per-scene, registers `FoyerPresenter` and `ReviewPresenter` as `IAsyncStartable` entry points, plus the `FoyerScreen` and `ReviewScreen` aggregator MonoBehaviours (and the persistent `OfflineBannerView` and `InputSystemReviewInputSource`) collected via `RegisterComponentInHierarchy<T>()`. Each `*Screen` owns its canvas root and exposes `Show()` / `Hide()` to its presenter.
 
 MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and brokers `SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent`, `DeckSelectedEvent`. UI presenters subscribe via `ISubscriber<T>` and the session service publishes via `IPublisher<T>` — both injected by the container.
 
@@ -58,6 +58,7 @@ MessagePipe is registered first in `ProjectLifetimeScope.Configure(...)` and bro
 - **DTOs live in Infrastructure.** Mapping between Domain types and DTOs (`Sm2StateDto`, `CardScheduleDto`, `DeckScheduleDto`, `SessionResultDto`, `CardReviewDto`) happens in `Infrastructure/Dtos/ScheduleMappers.cs`. Domain doesn't know about JSON or HTTP.
 - **Server is authoritative for `Sm2State`.** Per-card schedules live in the SQLite database behind the API. Client uses `IScheduleStore` (Application interface); `HttpScheduleStore` is the primary implementation, `JsonFileScheduleCache` provides degraded offline read-back, and `CachingScheduleStore` orchestrates the two. URL and timeouts come from a `ServerConfig` record built from a `ServerConfigAsset` ScriptableObject — never hardcoded.
 - **Composition guards reentrancy.** `IReviewSessionService.StartAsync` throws `InvalidOperationException` if state is not `Idle` — protects against double-clicks on a deck button.
+- **Screen aggregators are forwarders, not coordinators.** `FoyerScreen` and `ReviewScreen` group leaf views and proxy operations to them; they do not inject services, hold business state, or sequence multiple leaf awaits. Each `*Async` method on a screen returns a single leaf's `UniTask`. The one documented exception: `Show()` and `Hide()` own the screen's own canvas-visibility, and `Show()` MAY synchronously reset stale leaf visibility (hide grade buttons / summary) so a re-entered session starts from a clean baseline. Anything beyond that — multi-await sequencing, decisions based on application state — belongs in the presenter.
 - **Strict nullable is per asmdef.** Each asmdef we own ships with a co-located `csc.rsp` enabling `-nullable:enable -warnaserror+:nullable`. The project-level `Assets/csc.rsp` is intentionally empty (Unity passes every line of it as a compiler argument and has no comment syntax — keep it zero bytes) so `Assembly-CSharp-firstpass` (third-party code under `Assets/Plugins/`) compiles with defaults. Adding a new asmdef without its `csc.rsp` means losing the third architectural enforcement (alongside layer separation and the `IClock` indirection).
 
 ## Contracts
@@ -96,11 +97,14 @@ Errors: `HttpScheduleStore` throws `ScheduleStoreUnavailableException` on transp
 ```csharp
 SessionState State { get; }                   // Idle | Loading | Playing | Uploading | Error
 UniTask              StartAsync(DeckId deckId);   // throws InvalidOperationException if State != Idle
-void                 RevealCurrent();             // Playing → Playing (front → back), no network
+void                 RevealCurrent();             // throws if State != Playing; otherwise no-op today.
+                                                  // Reserved hook for future time-to-reveal analytics —
+                                                  // front-to-back transition is purely a view concern.
 UniTask              GradeAsync(ReviewGrade grade); // requires State == Playing; advances queue, may end session
 UniTask              EndAsync();                  // Playing → Uploading → Idle
 ReviewCard?          CurrentCard { get; }         // null when not Playing
 int                  Remaining { get; }
+int                  ReviewsCompleted { get; }    // count of GradeAsync calls in current session (incl. Again)
 int                  Total { get; }
 ```
 
@@ -147,9 +151,10 @@ record DeckSelectedEvent      (DeckId DeckId);
 record SessionStartedEvent    (Guid SessionId, DeckId DeckId, int CardCount, DateTime StartedAt);
 record CardReviewedEvent      (Guid SessionId, CardId CardId, ReviewGrade Grade, DateTime NextDueAt);
 record SessionFinishedEvent   (Guid SessionId, DeckId DeckId, int ReviewedCount, bool UploadedSuccessfully);
+record BackToFoyerRequested;
 ```
 
-Publishers: `ReviewSessionService` publishes `SessionStartedEvent` / `CardReviewedEvent` / `SessionFinishedEvent`; `FoyerPresenter` publishes `DeckSelectedEvent` on deck button click. Subscribers: `ReviewPresenter` (all session events), `FoyerPresenter` (`SessionFinishedEvent` to refresh stats), `ConsoleAnalyticsService` (all four for telemetry).
+Publishers: `ReviewSessionService` publishes `SessionStartedEvent` / `CardReviewedEvent` / `SessionFinishedEvent`; `FoyerPresenter` publishes `DeckSelectedEvent` on deck button click; `ReviewPresenter` publishes `BackToFoyerRequested` when the user dismisses the summary. Subscribers: `ReviewPresenter` (session events), `FoyerPresenter` (`SessionFinishedEvent` to refresh stats and `BackToFoyerRequested` to re-show the foyer canvas + refresh), `ConsoleAnalyticsService` (session events for telemetry).
 
 ## DI lifetimes
 
@@ -169,7 +174,9 @@ Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
 | `IReviewSessionService` → `ReviewSessionService` | Singleton | holds session state; reentrancy-guarded |
 | MessagePipe `IPublisher<T>` / `ISubscriber<T>` | Singleton | per the package's defaults |
 | `FoyerPresenter`, `ReviewPresenter` | Scoped (per-scene, in `FoyerLifetimeScope`) | `IAsyncStartable` entry points |
-| `DeckSelectionView`, `DeckButtonView[]`, `ReviewView` | Scoped | `RegisterComponentInHierarchy<T>()` |
+| `FoyerScreen`, `ReviewScreen` | Scoped | `RegisterComponentInHierarchy<T>()`; aggregate leaf views and own their canvas root via `Show()`/`Hide()` |
+| `DeckSelectionView`, `DeckButtonView[]`, `OfflineBannerView` | Scoped | `OfflineBannerView` registered separately (lives on a persistent canvas) |
+| `IReviewInputSource` → `InputSystemReviewInputSource` | Scoped | `RegisterComponentInHierarchy<T>().AsImplementedInterfaces()` |
 
 ## CachingScheduleStore — algorithm
 
@@ -215,16 +222,16 @@ The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/sch
 
 **Online happy path** (3-card session on `capitals` deck):
 
-1. Player clicks the Capitals deck button → `FoyerPresenter` publishes `DeckSelectedEvent("capitals")`.
-2. `ReviewPresenter` subscribes; calls `IReviewSessionService.StartAsync("capitals")`.
+1. Player clicks the Capitals deck button → `FoyerPresenter` publishes `DeckSelectedEvent("capitals")` and then hides the foyer canvas via `_foyerScreen.Hide()`.
+2. `ReviewPresenter` subscribes; resolves the deck for its display name, calls `_reviewScreen.Show()` (which activates the review canvas), then `IReviewSessionService.StartAsync("capitals")`.
 3. `ReviewSessionService` transitions `Idle → Loading`, calls `IScheduleStore.GetDeckScheduleAsync("capitals")`.
 4. `CachingScheduleStore` → `HttpScheduleStore` → `GET /decks/capitals/schedule` → 200, schedule cached, returned with `Source=Server`.
-5. Service filters `DueAt ≤ now`, sorts, builds queue. Transitions `Loading → Playing`, publishes `SessionStartedEvent`.
-6. Player grades 3 cards → `GradeAsync(Good)` × 3. Each grade: applies `Sm2Algorithm.Schedule` locally (for `NextDueAt` in the event), appends to in-memory `reviews`, persists via `cache.AppendPending`, publishes `CardReviewedEvent`.
+5. Service filters `DueAt ≤ now`, sorts, builds queue. Transitions `Loading → Playing`, publishes `SessionStartedEvent`. `ReviewPresenter` calls `_reviewScreen.ShowCardAsync(...)` for the first card.
+6. Player grades 3 cards → `GradeAsync(Good)` × 3. Each grade: applies `Sm2Algorithm.Schedule` locally (for `NextDueAt` in the event), appends to in-memory `reviews`, persists via `cache.AppendPending`, publishes `CardReviewedEvent`. Between grades the presenter awaits `_reviewScreen.AdvanceToNextCardAsync(...)`.
 7. Queue empty → `Playing → Uploading`. Service calls `IScheduleStore.UploadSessionAsync(result)`.
 8. `POST /sessions` → 200 with `updatedSchedule` (released subset, same filter as `GET /:id/schedule`). `CachingScheduleStore` removes pending, overwrites cache.
-9. `Uploading → Idle`. Publishes `SessionFinishedEvent(uploadedSuccessfully: true)`.
-10. `FoyerPresenter` re-fetches `GET /decks` to refresh deck-button counts.
+9. `Uploading → Idle`. Publishes `SessionFinishedEvent(uploadedSuccessfully: true)`. `ReviewPresenter` calls `_reviewScreen.ShowSummary(reviewedCount)`.
+10. Player dismisses the summary → `ReviewPresenter` calls `_reviewScreen.Hide()` and publishes `BackToFoyerRequested`. `FoyerPresenter` re-shows the foyer canvas via `_foyerScreen.Show()` and re-fetches deck stats to refresh the buttons.
 
 **Offline → reconnect** (session completes offline, app reopens later):
 
