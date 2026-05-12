@@ -112,7 +112,7 @@ Tag: `v0.4-foyer-mvp`.
 - [x] **6.3** (2026-05-12 → 2026-05-12) `ReviewPresenter` wired to `IReviewSessionService`
 - [x] **6.4** (2026-05-12 → 2026-05-12) Register both presenters in `FoyerLifetimeScope`
 - [x] **6.5** (2026-05-12 → 2026-05-12) Deck-button stats refresh on `SessionFinishedEvent` — subscription wired in commit 32af3eb (alongside 6.3/6.4); `FoyerPresenter` re-runs `RefreshAsync` and rebinds `DeckButtonModel` for every deck. Event publication is covered by `ReviewSessionServiceTests`.
-- [ ] **6.6** End-to-end smoke (server + Unity Play; verify offline-cache fallback by stopping server mid-session)
+- [x] **6.6** (2026-05-12 → 2026-05-12) End-to-end smoke (server + Unity Play; verify offline-cache fallback by stopping server mid-session)
 
 Tag: `v0.5-mvp`.
 
