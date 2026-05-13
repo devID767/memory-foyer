@@ -50,11 +50,15 @@ namespace MemoryFoyer.Application.Persistence
             }
         }
 
+        public UniTask EnqueuePendingAsync(SessionResult result, CancellationToken ct = default)
+        {
+            _cache.AppendPending(result);
+            return UniTask.CompletedTask;
+        }
+
         public async UniTask<DeckSchedule> UploadSessionAsync(
             SessionResult result, CancellationToken ct = default)
         {
-            _cache.AppendPending(result);
-
             try
             {
                 DeckSchedule schedule = await _inner.UploadSessionAsync(result, ct);

@@ -29,7 +29,8 @@ namespace MemoryFoyer.Composition
             builder.RegisterMessageBroker<DeckSelectedEvent>(options);
             builder.RegisterMessageBroker<SessionStartedEvent>(options);
             builder.RegisterMessageBroker<CardReviewedEvent>(options);
-            builder.RegisterMessageBroker<SessionFinishedEvent>(options);
+            builder.RegisterMessageBroker<SessionReviewedEvent>(options);
+            builder.RegisterMessageBroker<SessionUploadCompletedEvent>(options);
             builder.RegisterMessageBroker<BackToFoyerRequested>(options);
 
             ServerConfigAsset? serverAsset = Resources.Load<ServerConfigAsset>("Config/ServerConfig");

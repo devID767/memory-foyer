@@ -49,6 +49,12 @@ namespace MemoryFoyer.Infrastructure.Persistence
             }
         }
 
+        public UniTask EnqueuePendingAsync(SessionResult result, CancellationToken ct = default)
+        {
+            // No pending queue at this layer — CachingScheduleStore owns the offline cache.
+            return UniTask.CompletedTask;
+        }
+
         public async UniTask<DeckSchedule> UploadSessionAsync(SessionResult result, CancellationToken ct = default)
         {
             const string path = "/sessions";

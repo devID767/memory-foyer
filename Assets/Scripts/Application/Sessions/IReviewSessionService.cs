@@ -18,5 +18,6 @@ namespace MemoryFoyer.Application.Sessions
         void RevealCurrent();
         UniTask GradeAsync(ReviewGrade grade, CancellationToken ct = default);
         UniTask EndAsync(CancellationToken ct = default);
+        UniTask CommitAsync(CancellationToken ct = default);
     }
 }

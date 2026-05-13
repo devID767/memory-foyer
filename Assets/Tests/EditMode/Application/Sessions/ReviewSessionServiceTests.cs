@@ -91,36 +91,94 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
         }
 
         [Test]
-        public void GradeAsync_OnLastCard_TransitionsToUploading_ThenIdle_AndPublishesSessionFinishedTrue()
+        public void GradeAsync_OnLastCard_TransitionsToReviewed_AndPublishesSessionReviewedEvent_NoUpload()
         {
             Fixture f = Build(cardCount: 1);
             f.Service.StartAsync(Deck).GetAwaiter().GetResult();
 
             f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
 
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Reviewed));
+            Assert.That(f.Store.EnqueuedResults.Count, Is.EqualTo(1));
+            Assert.That(f.Store.UploadedResults.Count, Is.EqualTo(0));
+            Assert.That(f.SessionReviewed.Published.Count, Is.EqualTo(1));
+            Assert.That(f.SessionReviewed.Published[0].ReviewedCount, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(0));
+            Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void EndAsync_FromPlaying_TransitionsToReviewed_AndEnqueuesPending_NoUpload()
+        {
+            Fixture f = Build(cardCount: 3);
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+
+            f.Service.EndAsync().GetAwaiter().GetResult();
+
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Reviewed));
+            Assert.That(f.Store.EnqueuedResults.Count, Is.EqualTo(1));
+            Assert.That(f.Store.EnqueuedResults[0].Reviews.Count, Is.EqualTo(1));
+            Assert.That(f.Store.UploadedResults.Count, Is.EqualTo(0));
+            Assert.That(f.SessionReviewed.Published.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void CommitAsync_FromReviewed_Success_TransitionsToIdle_AndPublishesUploadCompletedTrue()
+        {
+            Fixture f = Build(cardCount: 1);
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+
+            f.Service.CommitAsync().GetAwaiter().GetResult();
+
             Assert.That(f.Service.State, Is.EqualTo(SessionState.Idle));
-            Assert.That(f.Service.Remaining, Is.EqualTo(0));
             Assert.That(f.Store.UploadedResults.Count, Is.EqualTo(1));
-            Assert.That(f.SessionFinished.Published.Count, Is.EqualTo(1));
-            Assert.That(f.SessionFinished.Published[0].UploadedSuccessfully, Is.True);
-            Assert.That(f.SessionFinished.Published[0].ReviewedCount, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published[0].Success, Is.True);
             Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(1));
         }
 
         [Test]
-        public void GradeAsync_UploadFailure_TransitionsToError_AndPublishesSessionFinishedFalse()
+        public void CommitAsync_UploadUnavailable_TransitionsToError_AndPublishesUploadCompletedFalse()
         {
             Fixture f = Build(cardCount: 1);
-            f.Store.ThrowOnUpload = true;
             f.Service.StartAsync(Deck).GetAwaiter().GetResult();
-
             f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+            f.Store.ThrowOnUpload = true;
+
+            f.Service.CommitAsync().GetAwaiter().GetResult();
 
             Assert.That(f.Service.State, Is.EqualTo(SessionState.Error));
-            Assert.That(f.SessionFinished.Published.Count, Is.EqualTo(1));
-            Assert.That(f.SessionFinished.Published[0].UploadedSuccessfully, Is.False);
-            Assert.That(f.SessionFinished.Published[0].ReviewedCount, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published[0].Success, Is.False);
             Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CommitAsync_FromPlaying_Throws()
+        {
+            Fixture f = Build(cardCount: 2);
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+            // Service is in Playing state — no FinishReviewing yet.
+
+            Assert.That(
+                () => f.Service.CommitAsync().GetAwaiter().GetResult(),
+                Throws.InvalidOperationException);
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Playing));
+            Assert.That(f.Store.UploadedResults.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void CommitAsync_FromIdle_Throws()
+        {
+            Fixture f = Build(cardCount: 1);
+            // Service is in Idle state — never started.
+
+            Assert.That(
+                () => f.Service.CommitAsync().GetAwaiter().GetResult(),
+                Throws.InvalidOperationException);
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Idle));
         }
 
         [Test]
@@ -166,12 +224,13 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             FakeAnalytics analytics = new();
             FakePublisher<SessionStartedEvent> started = new();
             FakePublisher<CardReviewedEvent> reviewed = new();
-            FakePublisher<SessionFinishedEvent> finished = new();
+            FakePublisher<SessionReviewedEvent> sessionReviewed = new();
+            FakePublisher<SessionUploadCompletedEvent> uploadCompleted = new();
 
             ReviewSessionService service = new(
-                repo, store, clock, analytics, started, reviewed, finished);
+                repo, store, clock, analytics, started, reviewed, sessionReviewed, uploadCompleted);
 
-            return new Fixture(service, store, analytics, started, reviewed, finished);
+            return new Fixture(service, store, analytics, started, reviewed, sessionReviewed, uploadCompleted);
         }
 
         private sealed record Fixture(
@@ -180,7 +239,8 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             FakeAnalytics Analytics,
             FakePublisher<SessionStartedEvent> SessionStarted,
             FakePublisher<CardReviewedEvent> CardReviewed,
-            FakePublisher<SessionFinishedEvent> SessionFinished);
+            FakePublisher<SessionReviewedEvent> SessionReviewed,
+            FakePublisher<SessionUploadCompletedEvent> SessionUploadCompleted);
 
         // ----- Fakes --------------------------------------------------------
 
@@ -202,6 +262,7 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             public bool ThrowOnGet;
             public bool ThrowOnUpload;
             public List<SessionResult> UploadedResults { get; } = new();
+            public List<SessionResult> EnqueuedResults { get; } = new();
 
             public FakeScheduleStore(DeckSchedule schedule) { _schedule = schedule; }
 
@@ -212,6 +273,12 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
                     throw new ScheduleStoreUnavailableException("get failed");
                 }
                 return UniTask.FromResult(_schedule);
+            }
+
+            public UniTask EnqueuePendingAsync(SessionResult result, CancellationToken ct = default)
+            {
+                EnqueuedResults.Add(result);
+                return UniTask.CompletedTask;
             }
 
             public UniTask<DeckSchedule> UploadSessionAsync(SessionResult result, CancellationToken ct = default)

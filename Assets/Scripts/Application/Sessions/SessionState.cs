@@ -5,6 +5,7 @@ namespace MemoryFoyer.Application.Sessions
         Idle,
         Loading,
         Playing,
+        Reviewed,
         Uploading,
         Error,
     }

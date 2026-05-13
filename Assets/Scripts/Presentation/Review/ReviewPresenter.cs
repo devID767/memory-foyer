@@ -19,7 +19,7 @@ namespace MemoryFoyer.Presentation.Review
         private readonly IReviewSessionService _session;
         private readonly IDeckRepository _deckRepository;
         private readonly ISubscriber<DeckSelectedEvent> _deckSelectedSubscriber;
-        private readonly ISubscriber<SessionFinishedEvent> _sessionFinishedSubscriber;
+        private readonly ISubscriber<SessionReviewedEvent> _sessionReviewedSubscriber;
         private readonly IPublisher<BackToFoyerRequested> _backToFoyerPublisher;
         private readonly ReviewScreen _screen;
         private readonly ErrorBannerView _errorBannerView;
@@ -37,7 +37,7 @@ namespace MemoryFoyer.Presentation.Review
             IReviewSessionService session,
             IDeckRepository deckRepository,
             ISubscriber<DeckSelectedEvent> deckSelectedSubscriber,
-            ISubscriber<SessionFinishedEvent> sessionFinishedSubscriber,
+            ISubscriber<SessionReviewedEvent> sessionReviewedSubscriber,
             IPublisher<BackToFoyerRequested> backToFoyerPublisher,
             ReviewScreen screen,
             ErrorBannerView errorBannerView,
@@ -46,7 +46,7 @@ namespace MemoryFoyer.Presentation.Review
             _session = session;
             _deckRepository = deckRepository;
             _deckSelectedSubscriber = deckSelectedSubscriber;
-            _sessionFinishedSubscriber = sessionFinishedSubscriber;
+            _sessionReviewedSubscriber = sessionReviewedSubscriber;
             _backToFoyerPublisher = backToFoyerPublisher;
             _screen = screen;
             _errorBannerView = errorBannerView;
@@ -59,8 +59,8 @@ namespace MemoryFoyer.Presentation.Review
 
             IDisposable deckSelectedSub = _deckSelectedSubscriber.Subscribe(
                 e => OnDeckSelected(e.DeckId));
-            IDisposable sessionFinishedSub = _sessionFinishedSubscriber.Subscribe(
-                e => OnSessionFinished(e));
+            IDisposable sessionReviewedSub = _sessionReviewedSubscriber.Subscribe(
+                e => OnSessionReviewed(e));
 
             _screen.RevealRequested += OnRevealRequested;
             _screen.GradeSubmitted += OnGradeSubmitted;
@@ -78,7 +78,7 @@ namespace MemoryFoyer.Presentation.Review
                 _input.GradePressed -= OnGradeSubmitted;
                 _input.ClosePressed -= OnReturnRequested;
                 deckSelectedSub.Dispose();
-                sessionFinishedSub.Dispose();
+                sessionReviewedSub.Dispose();
             });
 
             // Review screen starts hidden; FoyerPresenter owns the initial canvas state.
@@ -208,19 +208,6 @@ namespace MemoryFoyer.Presentation.Review
             {
                 return;
             }
-            catch (ScheduleStoreContractException ex)
-            {
-                Debug.LogWarning($"[ReviewPresenter] schedule store rejected session (status={ex.StatusCode}): {ex.Message}");
-                try
-                {
-                    await _errorBannerView.Show("Couldn't sync now — will retry", "returning to foyer", ct);
-                    await UniTask.Delay(TimeSpan.FromSeconds(ErrorAutoReturnSeconds), cancellationToken: ct);
-                    await _errorBannerView.Hide(ct);
-                }
-                catch (OperationCanceledException) { return; }
-                _backToFoyerPublisher.Publish(new BackToFoyerRequested());
-                return;
-            }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
@@ -249,11 +236,11 @@ namespace MemoryFoyer.Presentation.Review
                     _busy = false;
                 }
             }
-            // If session is no longer Playing, SessionFinishedEvent will have been published
-            // synchronously inside GradeAsync, and OnSessionFinished already called ShowSummary.
+            // If session is no longer Playing, GradeAsync transitioned to Reviewed and published
+            // SessionReviewedEvent synchronously; OnSessionReviewed already called ShowSummary.
         }
 
-        private void OnSessionFinished(SessionFinishedEvent evt)
+        private void OnSessionReviewed(SessionReviewedEvent evt)
         {
             _screen.ShowSummary(evt.ReviewedCount);
         }
@@ -265,36 +252,94 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTaskVoid RunReturnAsync()
         {
-            CancellationToken ct = _lifetimeCt;
-
-            if (_session.State == SessionState.Playing)
+            if (_busy)
             {
-                try
-                {
-                    await _session.EndAsync(ct);
-                }
-                catch (OperationCanceledException)
-                {
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogException(ex);
-                    return;
-                }
-                // EndAsync synchronously emits SessionFinishedEvent → OnSessionFinished
-                // shows the summary. Return without hiding — user sees the summary first.
                 return;
             }
 
-            if (_session.State == SessionState.Idle || _session.State == SessionState.Error)
+            CancellationToken ct = _lifetimeCt;
+
+            switch (_session.State)
             {
-                // Summary is visible; user dismisses back to the foyer.
-                _screen.Hide();
-                _backToFoyerPublisher.Publish(new BackToFoyerRequested());
+                case SessionState.Playing:
+                    await EndCurrentReviewAsync(ct);
+                    return;
+                case SessionState.Reviewed:
+                    await CommitAndExitAsync(ct);
+                    return;
+                case SessionState.Idle:
+                case SessionState.Error:
+                    // Zero-cards-due summary (state stayed Idle, no Reviewed transition),
+                    // or user dismissing after a previous Error left the session unrecoverable.
+                    ExitToFoyer();
+                    return;
+                default:
+                    // Loading / Uploading: ignore (race; should not normally be reachable).
+                    return;
+            }
+        }
+
+        private async UniTask EndCurrentReviewAsync(CancellationToken ct)
+        {
+            try
+            {
+                await _session.EndAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return;
+            }
+            // EndAsync transitioned to Reviewed and published SessionReviewedEvent;
+            // OnSessionReviewed showed the Summary. User dismisses to commit.
+        }
+
+        private async UniTask CommitAndExitAsync(CancellationToken ct)
+        {
+            try
+            {
+                _busy = true;
+                await _session.CommitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (ScheduleStoreContractException ex)
+            {
+                Debug.LogWarning($"[ReviewPresenter] schedule store rejected session (status={ex.StatusCode}): {ex.Message}");
+                try
+                {
+                    await _errorBannerView.Show("Couldn't sync now — will retry", "returning to foyer", ct);
+                    await UniTask.Delay(TimeSpan.FromSeconds(ErrorAutoReturnSeconds), cancellationToken: ct);
+                    await _errorBannerView.Hide(ct);
+                }
+                catch (OperationCanceledException) { return; }
+                ExitToFoyer();
+                return;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                ExitToFoyer();
+                return;
+            }
+            finally
+            {
+                _busy = false;
             }
 
-            // State == Uploading or Loading: do nothing (race, should not normally be reachable).
+            ExitToFoyer();
+        }
+
+        private void ExitToFoyer()
+        {
+            _screen.Hide();
+            _backToFoyerPublisher.Publish(new BackToFoyerRequested());
         }
     }
 }
