@@ -12,6 +12,7 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 - [ ] **T-5** (2026-05-12) Stale-flash of previous deck models on BackToFoyer — FoyerPresenter calls _screen.Show() immediately before RefreshAsync begins, so for ~50ms while the first I/O await is in flight, foyer canvas is visible with old deck stats before Bind(models) refreshes them. Acceptable today (symmetric with first-launch behavior), but could defer Show() or add a loading state.
 - [ ] **T-6** (2026-05-12) Progress label may exceed Total on ReviewGrade.Again — numerator (_session.ReviewsCompleted + 1) can exceed denominator (_session.Total, initial queue size) when user grades Again repeatedly because the same card re-enters the queue. Cosmetic only; denominator semantics are "initial unique cards", numerator is "card I'm currently looking at by order of appearance".
 - [ ] **T-7** (2026-05-12) Loading-state UX gap on session start — between ReviewPresenter calling _screen.Show() and _session.StartAsync completing, the review canvas is visible with deck name but empty card area (network round-trip to fetch schedule). Add a loading indicator or defer Show() until first card is ready. Source: Assets/Scripts/Presentation/Review/ReviewPresenter.cs RunOnDeckSelectedAsync.
+- [ ] **T-9** (2026-05-13) fix: polish "All caught up" empty-state card visuals — currently the card layout looks broken (title/icon/counter areas left blank with only the bottom label visible). Needs a proper empty-state design instead of just hiding everything.
 
 ## Bugs
 <!-- next ID: B-2 -->
