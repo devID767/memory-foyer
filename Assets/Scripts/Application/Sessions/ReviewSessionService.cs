@@ -203,6 +203,11 @@ namespace MemoryFoyer.Application.Sessions
                 _sessionFinishedPublisher.Publish(new SessionFinishedEvent(sessionId, deckId, reviewedCount, false));
                 return;
             }
+            catch
+            {
+                _state = SessionState.Error;
+                throw;
+            }
 
             // Reassign rather than Clear: the just-published SessionResult holds a reference
             // to the old list, so mutating it would alter what the inner store received.

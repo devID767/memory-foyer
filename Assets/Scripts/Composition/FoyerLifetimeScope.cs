@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using MemoryFoyer.Domain.Models;
 using MemoryFoyer.Infrastructure.ScriptableObjects;
+using MemoryFoyer.Presentation.Banners;
 using MemoryFoyer.Presentation.Foyer;
 using MemoryFoyer.Presentation.Review;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace MemoryFoyer.Composition
 
             builder.RegisterComponentInHierarchy<FoyerScreen>();
             builder.RegisterComponentInHierarchy<OfflineBannerView>();
+            builder.RegisterComponentInHierarchy<ErrorBannerView>();
             builder.RegisterComponentInHierarchy<ReviewScreen>();
             builder.RegisterComponentInHierarchy<InputSystemReviewInputSource>()
                 .AsImplementedInterfaces();

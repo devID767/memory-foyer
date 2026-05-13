@@ -2,10 +2,12 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryFoyer.Application.Events;
+using MemoryFoyer.Application.Persistence;
 using MemoryFoyer.Application.Repositories;
 using MemoryFoyer.Application.Sessions;
 using MemoryFoyer.Domain.Models;
 using MemoryFoyer.Domain.Scheduling;
+using MemoryFoyer.Presentation.Banners;
 using MessagePipe;
 using UnityEngine;
 using VContainer.Unity;
@@ -20,7 +22,10 @@ namespace MemoryFoyer.Presentation.Review
         private readonly ISubscriber<SessionFinishedEvent> _sessionFinishedSubscriber;
         private readonly IPublisher<BackToFoyerRequested> _backToFoyerPublisher;
         private readonly ReviewScreen _screen;
+        private readonly ErrorBannerView _errorBannerView;
         private readonly IReviewInputSource _input;
+
+        private const float ErrorAutoReturnSeconds = 2f;
 
         // Guards re-entry while a card animation (RevealBackAsync / AdvanceToNextCardAsync)
         // is in flight — prevents spammed input from starting overlapping async chains.
@@ -35,6 +40,7 @@ namespace MemoryFoyer.Presentation.Review
             ISubscriber<SessionFinishedEvent> sessionFinishedSubscriber,
             IPublisher<BackToFoyerRequested> backToFoyerPublisher,
             ReviewScreen screen,
+            ErrorBannerView errorBannerView,
             IReviewInputSource input)
         {
             _session = session;
@@ -43,6 +49,7 @@ namespace MemoryFoyer.Presentation.Review
             _sessionFinishedSubscriber = sessionFinishedSubscriber;
             _backToFoyerPublisher = backToFoyerPublisher;
             _screen = screen;
+            _errorBannerView = errorBannerView;
             _input = input;
         }
 
@@ -199,6 +206,19 @@ namespace MemoryFoyer.Presentation.Review
             }
             catch (OperationCanceledException)
             {
+                return;
+            }
+            catch (ScheduleStoreContractException ex)
+            {
+                Debug.LogWarning($"[ReviewPresenter] schedule store rejected session (status={ex.StatusCode}): {ex.Message}");
+                try
+                {
+                    await _errorBannerView.Show("Couldn't sync now — will retry", "returning to foyer", ct);
+                    await UniTask.Delay(TimeSpan.FromSeconds(ErrorAutoReturnSeconds), cancellationToken: ct);
+                    await _errorBannerView.Hide(ct);
+                }
+                catch (OperationCanceledException) { return; }
+                _backToFoyerPublisher.Publish(new BackToFoyerRequested());
                 return;
             }
             catch (Exception ex)
