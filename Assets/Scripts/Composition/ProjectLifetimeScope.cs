@@ -72,8 +72,8 @@ namespace MemoryFoyer.Composition
             builder.Register<HttpScheduleStore>(Lifetime.Singleton);
             builder.Register<CachingScheduleStore>(resolver =>
                 new CachingScheduleStore(
-                    inner:     resolver.Resolve<HttpScheduleStore>(),
-                    cache:     resolver.Resolve<IScheduleCache>(),
+                    inner: resolver.Resolve<HttpScheduleStore>(),
+                    cache: resolver.Resolve<IScheduleCache>(),
                     analytics: resolver.Resolve<IAnalyticsService>()),
                 Lifetime.Singleton)
                 .As<IScheduleStore>()
@@ -82,7 +82,6 @@ namespace MemoryFoyer.Composition
             builder.Register<IReviewSessionService, ReviewSessionService>(Lifetime.Singleton);
 
             builder.RegisterEntryPoint<CompositionSmokeTest>();
-            builder.RegisterEntryPoint<PendingSessionDrainer>();
         }
     }
 }

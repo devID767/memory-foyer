@@ -9,6 +9,7 @@ using MemoryFoyer.Application.Repositories;
 using MemoryFoyer.Domain.Models;
 using MemoryFoyer.Domain.Time;
 using MessagePipe;
+using UnityEngine;
 using VContainer.Unity;
 
 namespace MemoryFoyer.Presentation.Foyer
@@ -17,9 +18,9 @@ namespace MemoryFoyer.Presentation.Foyer
     {
         private readonly IDeckRepository _deckRepository;
         private readonly IScheduleStore _scheduleStore;
+        private readonly CachingScheduleStore _cachingScheduleStore;
         private readonly IClock _clock;
         private readonly IPublisher<DeckSelectedEvent> _deckSelectedPublisher;
-        private readonly ISubscriber<SessionFinishedEvent> _sessionFinishedSubscriber;
         private readonly ISubscriber<BackToFoyerRequested> _backToFoyerSubscriber;
         private readonly FoyerScreen _screen;
         private readonly OfflineBannerView _offlineBannerView;
@@ -27,18 +28,18 @@ namespace MemoryFoyer.Presentation.Foyer
         public FoyerPresenter(
             IDeckRepository deckRepository,
             IScheduleStore scheduleStore,
+            CachingScheduleStore cachingScheduleStore,
             IClock clock,
             IPublisher<DeckSelectedEvent> deckSelectedPublisher,
-            ISubscriber<SessionFinishedEvent> sessionFinishedSubscriber,
             ISubscriber<BackToFoyerRequested> backToFoyerSubscriber,
             FoyerScreen screen,
             OfflineBannerView offlineBannerView)
         {
             _deckRepository = deckRepository;
             _scheduleStore = scheduleStore;
+            _cachingScheduleStore = cachingScheduleStore;
             _clock = clock;
             _deckSelectedPublisher = deckSelectedPublisher;
-            _sessionFinishedSubscriber = sessionFinishedSubscriber;
             _backToFoyerSubscriber = backToFoyerSubscriber;
             _screen = screen;
             _offlineBannerView = offlineBannerView;
@@ -46,9 +47,6 @@ namespace MemoryFoyer.Presentation.Foyer
 
         public async UniTask StartAsync(CancellationToken cancellation)
         {
-            IDisposable sessionFinishedSubscription = _sessionFinishedSubscriber.Subscribe(
-                _ => RefreshAsync(cancellation).Forget());
-
             IDisposable backToFoyerSubscription = _backToFoyerSubscriber.Subscribe(
                 _ =>
                 {
@@ -62,7 +60,6 @@ namespace MemoryFoyer.Presentation.Foyer
             cancellation.Register(() =>
             {
                 _screen.DeckClicked -= OnDeckClicked;
-                sessionFinishedSubscription.Dispose();
                 backToFoyerSubscription.Dispose();
             });
 
@@ -73,7 +70,29 @@ namespace MemoryFoyer.Presentation.Foyer
             bool reachable = await _scheduleStore.IsServerReachableAsync(cancellation);
             _offlineBannerView.SetVisible(!reachable);
 
+            // Drain before refresh: parallel GETs would race the sequential drain POSTs.
+            if (reachable)
+            {
+                await DrainPending(cancellation);
+            }
+
             await RefreshAsync(cancellation);
+        }
+
+        private async UniTask DrainPending(CancellationToken cancellation)
+        {
+            try
+            {
+                await _cachingScheduleStore.DrainPendingAsync(cancellation);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Foyer] Pending drain failed: {ex.Message}");
+            }
         }
 
         private void OnDeckClicked(DeckId deckId)
