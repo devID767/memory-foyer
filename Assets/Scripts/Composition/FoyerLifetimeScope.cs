@@ -25,6 +25,7 @@ namespace MemoryFoyer.Composition
             builder.RegisterComponentInHierarchy<FoyerScreen>();
             builder.RegisterComponentInHierarchy<OfflineBannerView>();
             builder.RegisterComponentInHierarchy<ErrorBannerView>();
+            builder.RegisterComponentInHierarchy<LoadingView>();
             builder.RegisterComponentInHierarchy<ReviewScreen>();
             builder.RegisterComponentInHierarchy<InputSystemReviewInputSource>()
                 .AsImplementedInterfaces();

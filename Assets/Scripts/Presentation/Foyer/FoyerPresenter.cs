@@ -25,6 +25,7 @@ namespace MemoryFoyer.Presentation.Foyer
         private readonly ISubscriber<BackToFoyerRequested> _backToFoyerSubscriber;
         private readonly FoyerScreen _screen;
         private readonly OfflineBannerView _offlineBannerView;
+        private readonly LoadingView _loadingView;
 
         public FoyerPresenter(
             IDeckRepository deckRepository,
@@ -34,7 +35,8 @@ namespace MemoryFoyer.Presentation.Foyer
             IPublisher<DeckSelectedEvent> deckSelectedPublisher,
             ISubscriber<BackToFoyerRequested> backToFoyerSubscriber,
             FoyerScreen screen,
-            OfflineBannerView offlineBannerView)
+            OfflineBannerView offlineBannerView,
+            LoadingView loadingView)
         {
             _deckRepository = deckRepository;
             _scheduleStore = scheduleStore;
@@ -44,16 +46,13 @@ namespace MemoryFoyer.Presentation.Foyer
             _backToFoyerSubscriber = backToFoyerSubscriber;
             _screen = screen;
             _offlineBannerView = offlineBannerView;
+            _loadingView = loadingView;
         }
 
         public async UniTask StartAsync(CancellationToken cancellation)
         {
             IDisposable backToFoyerSubscription = _backToFoyerSubscriber.Subscribe(
-                _ =>
-                {
-                    _screen.Show();
-                    ProbeDrainAndRefreshAsync(cancellation).Forget();
-                });
+                _ => ProbeDrainAndRefreshAsync(cancellation).Forget());
 
             _screen.DeckClicked += OnDeckClicked;
 
@@ -63,15 +62,15 @@ namespace MemoryFoyer.Presentation.Foyer
                 backToFoyerSubscription.Dispose();
             });
 
-            // Show the foyer canvas immediately so the user sees it during the initial
-            // reachability probe rather than staring at a blank scene.
-            _screen.Show();
-
             await ProbeDrainAndRefreshAsync(cancellation);
         }
 
         private async UniTask ProbeDrainAndRefreshAsync(CancellationToken ct)
         {
+            // Foyer canvas reveals only after data is bound — loading view fronts the wait,
+            // then its on-hidden callback flips the canvas on with fresh stats.
+            _loadingView.Show(_screen.Show);
+
             bool reachable = await _scheduleStore.IsServerReachableAsync(ct);
             _offlineBannerView.SetVisible(!reachable);
 
@@ -82,6 +81,7 @@ namespace MemoryFoyer.Presentation.Foyer
             }
 
             await RefreshAsync(ct);
+            _loadingView.Hide();
         }
 
         private async UniTask DrainPending(CancellationToken cancellation)

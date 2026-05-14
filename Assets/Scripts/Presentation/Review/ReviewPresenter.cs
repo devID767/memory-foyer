@@ -22,6 +22,7 @@ namespace MemoryFoyer.Presentation.Review
         private readonly ISubscriber<SessionReviewedEvent> _sessionReviewedSubscriber;
         private readonly IPublisher<BackToFoyerRequested> _backToFoyerPublisher;
         private readonly ReviewScreen _screen;
+        private readonly LoadingView _loadingView;
         private readonly ErrorBannerView _errorBannerView;
         private readonly IReviewInputSource _input;
 
@@ -40,6 +41,7 @@ namespace MemoryFoyer.Presentation.Review
             ISubscriber<SessionReviewedEvent> sessionReviewedSubscriber,
             IPublisher<BackToFoyerRequested> backToFoyerPublisher,
             ReviewScreen screen,
+            LoadingView loadingView,
             ErrorBannerView errorBannerView,
             IReviewInputSource input)
         {
@@ -49,6 +51,7 @@ namespace MemoryFoyer.Presentation.Review
             _sessionReviewedSubscriber = sessionReviewedSubscriber;
             _backToFoyerPublisher = backToFoyerPublisher;
             _screen = screen;
+            _loadingView = loadingView;
             _errorBannerView = errorBannerView;
             _input = input;
         }
@@ -104,11 +107,14 @@ namespace MemoryFoyer.Presentation.Review
 
             CancellationToken ct = _lifetimeCt;
 
+            // Review canvas is gated behind the loading view: _screen.Show is wired as the
+            // on-hidden callback so the canvas only reveals after the session is ready.
+            _loadingView.Show(_screen.Show);
+
             try
             {
                 Deck deck = await _deckRepository.GetDeckAsync(deckId, ct);
                 _screen.SetDeckName(deck.DisplayName);
-                _screen.Show(); // Show resets stale summary/grade visibility (fix #3).
                 await _session.StartAsync(deckId, ct);
             }
             catch (OperationCanceledException)
@@ -118,15 +124,19 @@ namespace MemoryFoyer.Presentation.Review
             catch (DeckNotFoundException ex)
             {
                 Debug.LogException(ex);
+                _loadingView.Hide(runCallback: false);
                 _backToFoyerPublisher.Publish(new BackToFoyerRequested());
                 return;
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                _loadingView.Hide(runCallback: false);
                 _backToFoyerPublisher.Publish(new BackToFoyerRequested());
                 return;
             }
+
+            _loadingView.Hide();
 
             ReviewCard? current = _session.CurrentCard;
             if (_session.State == SessionState.Playing && current is not null)
@@ -300,6 +310,11 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTask CommitAndExitAsync(CancellationToken ct)
         {
+            // Hide summary and arm the loading cover BEFORE awaiting the upload — without
+            // this, the summary lingers on top of the loading view until POST completes.
+            _screen.Hide();
+            _loadingView.Show();
+
             try
             {
                 _busy = true;
@@ -312,6 +327,7 @@ namespace MemoryFoyer.Presentation.Review
             catch (ScheduleStoreContractException ex)
             {
                 Debug.LogWarning($"[ReviewPresenter] schedule store rejected session (status={ex.StatusCode}): {ex.Message}");
+                _loadingView.Hide(runCallback: false);
                 try
                 {
                     await _errorBannerView.Show("Couldn't sync now — will retry", "returning to foyer", ct);
@@ -325,6 +341,7 @@ namespace MemoryFoyer.Presentation.Review
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                _loadingView.Hide(runCallback: false);
                 ExitToFoyer();
                 return;
             }
