@@ -52,8 +52,7 @@ namespace MemoryFoyer.Presentation.Foyer
                 _ =>
                 {
                     _screen.Show();
-                    // TODO 6.x: re-probe reachability on BackToFoyer
-                    RefreshAsync(cancellation).Forget();
+                    ProbeDrainAndRefreshAsync(cancellation).Forget();
                 });
 
             _screen.DeckClicked += OnDeckClicked;
@@ -68,16 +67,21 @@ namespace MemoryFoyer.Presentation.Foyer
             // reachability probe rather than staring at a blank scene.
             _screen.Show();
 
-            bool reachable = await _scheduleStore.IsServerReachableAsync(cancellation);
+            await ProbeDrainAndRefreshAsync(cancellation);
+        }
+
+        private async UniTask ProbeDrainAndRefreshAsync(CancellationToken ct)
+        {
+            bool reachable = await _scheduleStore.IsServerReachableAsync(ct);
             _offlineBannerView.SetVisible(!reachable);
 
             // Drain before refresh: parallel GETs would race the sequential drain POSTs.
             if (reachable)
             {
-                await DrainPending(cancellation);
+                await DrainPending(ct);
             }
 
-            await RefreshAsync(cancellation);
+            await RefreshAsync(ct);
         }
 
         private async UniTask DrainPending(CancellationToken cancellation)
