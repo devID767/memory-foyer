@@ -96,9 +96,7 @@ namespace MemoryFoyer.Presentation.Foyer
                 ? string.Format(StatsFormat, model.DueCount, model.TotalCount, _accentHex, _inkHex)
                 : $"<color=#{_restHex}>{CaughtUpLabel}</color>";
 
-            _nameLabel.gameObject.SetActive(_interactable);
-
-            bool showIcon = _interactable && icon != null;
+            bool showIcon = icon != null;
             _iconImage.gameObject.SetActive(showIcon);
             if (showIcon)
             {
