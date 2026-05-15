@@ -11,8 +11,12 @@ namespace MemoryFoyer.Application.Sessions
         ReviewCard? CurrentCard { get; }
         int Remaining { get; }
         int Total { get; }
-        /// <summary>Count of <see cref="GradeAsync"/> calls in the current session, including Again.</summary>
-        int ReviewsCompleted { get; }
+        /// <summary>
+        /// 1-based position of the card currently shown among the initial <see cref="Total"/>
+        /// (distinct cards cleared + 1). Bounded to 1..Total; an Again does not advance it.
+        /// 0 when not <see cref="SessionState.Playing"/>.
+        /// </summary>
+        int Position { get; }
 
         UniTask StartAsync(DeckId deckId, CancellationToken ct = default);
         void RevealCurrent();

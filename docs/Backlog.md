@@ -8,7 +8,6 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 <!-- next ID: T-9 -->
 
 - [ ] **T-2** (2026-05-04) Eliminate openapi.yaml ↔ zod schema duplication via `zod-to-openapi`. Currently `server/openapi.yaml` and `server/schemas.js` describe the same DTOs (CardReview, SessionResult, etc.) in parallel and can drift silently. Generate the OpenAPI spec from zod schemas as single source of truth; keep `openapi.yaml` as a generated artifact.
-- [ ] **T-6** (2026-05-12) Progress label may exceed Total on ReviewGrade.Again — numerator (_session.ReviewsCompleted + 1) can exceed denominator (_session.Total, initial queue size) when user grades Again repeatedly because the same card re-enters the queue. Cosmetic only; denominator semantics are "initial unique cards", numerator is "card I'm currently looking at by order of appearance".
 
 ## Bugs
 <!-- next ID: B-2 -->
@@ -29,3 +28,4 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 - [x] **T-5** (2026-05-12 → 2026-05-14) Stale-flash of previous deck models on BackToFoyer — FoyerPresenter calls _screen.Show() immediately before RefreshAsync begins, so for ~50ms while the first I/O await is in flight, foyer canvas is visible with old deck stats before Bind(models) refreshes them. Acceptable today (symmetric with first-launch behavior), but could defer Show() or add a loading state.
 - [x] **T-7** (2026-05-12 → 2026-05-14) Loading-state UX gap on session start — between ReviewPresenter calling _screen.Show() and _session.StartAsync completing, the review canvas is visible with deck name but empty card area (network round-trip to fetch schedule). Add a loading indicator or defer Show() until first card is ready. Source: Assets/Scripts/Presentation/Review/ReviewPresenter.cs RunOnDeckSelectedAsync.
 - [x] **T-9** (2026-05-13 → 2026-05-15) fix: polish "All caught up" empty-state card visuals — currently the card layout looks broken (title/icon/counter areas left blank with only the bottom label visible). Needs a proper empty-state design instead of just hiding everything.
+- [x] **T-6** (2026-05-12 → 2026-05-15) Progress label may exceed Total on ReviewGrade.Again — numerator (_session.ReviewsCompleted + 1) can exceed denominator (_session.Total, initial queue size) when user grades Again repeatedly because the same card re-enters the queue. Fixed by switching to cleared-based progress: Position = Total − Remaining + 1, bounded to [1, Total]. replaced ReviewsCompleted with Position property on IReviewSessionService; added unit tests.

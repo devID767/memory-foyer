@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__UnityMCP__run_tests",
+      "mcp__UnityMCP__get_test_job"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {

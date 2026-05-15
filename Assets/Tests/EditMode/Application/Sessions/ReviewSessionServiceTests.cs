@@ -91,6 +91,46 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
         }
 
         [Test]
+        public void Position_OnRepeatedAgain_StaysWithinTotal_AndOnlyAdvancesWhenCardCleared()
+        {
+            Fixture f = Build(cardCount: 2);
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+
+            Assert.That(f.Service.Position, Is.EqualTo(1));
+            Assert.That(f.Service.Total, Is.EqualTo(2));
+
+            // Again does not clear a card, so progress does not advance.
+            f.Service.GradeAsync(ReviewGrade.Again).GetAwaiter().GetResult();
+            Assert.That(f.Service.Position, Is.EqualTo(1));
+            Assert.That(f.Service.Position, Is.LessThanOrEqualTo(f.Service.Total));
+
+            f.Service.GradeAsync(ReviewGrade.Again).GetAwaiter().GetResult();
+            Assert.That(f.Service.Position, Is.EqualTo(1));
+            Assert.That(f.Service.Position, Is.LessThanOrEqualTo(f.Service.Total));
+
+            // First distinct card cleared → now on the last card.
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+            Assert.That(f.Service.Position, Is.EqualTo(2));
+            Assert.That(f.Service.Position, Is.LessThanOrEqualTo(f.Service.Total));
+        }
+
+        [Test]
+        public void Position_WhenNotPlaying_IsZero()
+        {
+            Fixture f = Build(cardCount: 1);
+
+            // Idle — never started.
+            Assert.That(f.Service.Position, Is.EqualTo(0));
+
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+
+            // Reviewed — queue drained.
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Reviewed));
+            Assert.That(f.Service.Position, Is.EqualTo(0));
+        }
+
+        [Test]
         public void GradeAsync_OnLastCard_TransitionsToReviewed_AndPublishesSessionReviewedEvent_NoUpload()
         {
             Fixture f = Build(cardCount: 1);

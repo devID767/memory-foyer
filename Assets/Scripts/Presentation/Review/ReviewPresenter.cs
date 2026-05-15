@@ -141,7 +141,7 @@ namespace MemoryFoyer.Presentation.Review
             ReviewCard? current = _session.CurrentCard;
             if (_session.State == SessionState.Playing && current is not null)
             {
-                _screen.SetProgress(1, _session.Total);
+                _screen.SetProgress(_session.Position, _session.Total);
                 try
                 {
                     await _screen.ShowCardAsync(new FrontFaceData(current.Front), ct);
@@ -227,9 +227,7 @@ namespace MemoryFoyer.Presentation.Review
             ReviewCard? next = _session.CurrentCard;
             if (_session.State == SessionState.Playing && next is not null)
             {
-                // Progress numerator is completed grades + 1 (fix #1). May exceed Total
-                // denominator on ReviewGrade.Again — cosmetic; denominator is initial queue size.
-                _screen.SetProgress(_session.ReviewsCompleted + 1, _session.Total);
+                _screen.SetProgress(_session.Position, _session.Total);
 
                 try
                 {
