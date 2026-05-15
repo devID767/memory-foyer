@@ -14,12 +14,14 @@ namespace MemoryFoyer.Infrastructure.Persistence
     {
         private readonly string _schedulesDir;
         private readonly string _pendingDir;
+        private readonly string _summariesPath;
         private readonly IClock _clock;
 
         public JsonFileScheduleCache(string rootPath, IClock clock)
         {
             _schedulesDir = Path.Combine(rootPath, "schedules");
             _pendingDir = Path.Combine(rootPath, "pending");
+            _summariesPath = Path.Combine(rootPath, "deck-summaries.json");
             _clock = clock;
         }
 
@@ -69,6 +71,43 @@ namespace MemoryFoyer.Infrastructure.Persistence
         public bool Has(DeckId deckId)
         {
             return File.Exists(SchedulePath(deckId));
+        }
+
+        public void SaveDeckSummaries(IReadOnlyList<DeckSummary> summaries)
+        {
+            DeckSummaryDto[] dtos = new DeckSummaryDto[summaries.Count];
+            for (int i = 0; i < summaries.Count; i++)
+            {
+                dtos[i] = ScheduleMappers.ToDto(summaries[i]);
+            }
+
+            DeckSummaryListDto wrapper = new DeckSummaryListDto { decks = dtos };
+            WriteAtomic(_summariesPath, JsonUtility.ToJson(wrapper));
+        }
+
+        public IReadOnlyList<DeckSummary>? LoadDeckSummaries()
+        {
+            if (!File.Exists(_summariesPath))
+            {
+                return null;
+            }
+
+            try
+            {
+                string json = File.ReadAllText(_summariesPath);
+                DeckSummaryListDto? wrapper = JsonUtility.FromJson<DeckSummaryListDto>(json);
+                if (wrapper is null)
+                {
+                    return null;
+                }
+
+                return ScheduleMappers.FromDtos(wrapper.decks);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Cache] Corrupt deck-summaries cache: {ex.Message}");
+                return null;
+            }
         }
 
         public void AppendPending(SessionResult result)

@@ -306,6 +306,9 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
 
             public FakeScheduleStore(DeckSchedule schedule) { _schedule = schedule; }
 
+            public UniTask<IReadOnlyList<DeckSummary>> GetDeckSummariesAsync(CancellationToken ct = default)
+                => UniTask.FromResult<IReadOnlyList<DeckSummary>>(Array.Empty<DeckSummary>());
+
             public UniTask<DeckSchedule> GetDeckScheduleAsync(DeckId deckId, CancellationToken ct = default)
             {
                 if (ThrowOnGet)

@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryFoyer.Application.Events;
+using MemoryFoyer.Application.Foyer;
 using MemoryFoyer.Application.Persistence;
 using MemoryFoyer.Application.Repositories;
 using MemoryFoyer.Domain.Models;
-using MemoryFoyer.Domain.Time;
 using MemoryFoyer.Presentation.Banners;
 using MessagePipe;
 using UnityEngine;
@@ -20,7 +19,6 @@ namespace MemoryFoyer.Presentation.Foyer
         private readonly IDeckRepository _deckRepository;
         private readonly IScheduleStore _scheduleStore;
         private readonly CachingScheduleStore _cachingScheduleStore;
-        private readonly IClock _clock;
         private readonly IPublisher<DeckSelectedEvent> _deckSelectedPublisher;
         private readonly ISubscriber<BackToFoyerRequested> _backToFoyerSubscriber;
         private readonly FoyerScreen _screen;
@@ -31,7 +29,6 @@ namespace MemoryFoyer.Presentation.Foyer
             IDeckRepository deckRepository,
             IScheduleStore scheduleStore,
             CachingScheduleStore cachingScheduleStore,
-            IClock clock,
             IPublisher<DeckSelectedEvent> deckSelectedPublisher,
             ISubscriber<BackToFoyerRequested> backToFoyerSubscriber,
             FoyerScreen screen,
@@ -41,7 +38,6 @@ namespace MemoryFoyer.Presentation.Foyer
             _deckRepository = deckRepository;
             _scheduleStore = scheduleStore;
             _cachingScheduleStore = cachingScheduleStore;
-            _clock = clock;
             _deckSelectedPublisher = deckSelectedPublisher;
             _backToFoyerSubscriber = backToFoyerSubscriber;
             _screen = screen;
@@ -111,17 +107,38 @@ namespace MemoryFoyer.Presentation.Foyer
         private async UniTask RefreshAsync(CancellationToken ct)
         {
             IReadOnlyList<Deck> decks = await _deckRepository.GetAllAsync(ct);
+            IReadOnlyList<DeckSummary> summaries = await _scheduleStore.GetDeckSummariesAsync(ct);
 
-            DeckSchedule[] schedules = await UniTask.WhenAll(
-                decks.Select(d => _scheduleStore.GetDeckScheduleAsync(d.Id, ct)));
-
-            DeckButtonModel[] models = new DeckButtonModel[decks.Count];
-            for (int i = 0; i < decks.Count; i++)
+            Dictionary<string, DeckSummary> summaryById =
+                new Dictionary<string, DeckSummary>(summaries.Count);
+            foreach (DeckSummary summary in summaries)
             {
-                Deck deck = decks[i];
-                DeckSchedule schedule = schedules[i];
-                int dueCount = schedule.Cards.Count(c => c.State.DueAt <= _clock.UtcNow);
-                models[i] = new DeckButtonModel(deck.Id, deck.DisplayName, dueCount, deck.Cards.Count);
+                summaryById[summary.Id.Value] = summary;
+            }
+
+            List<DeckListEntry> entries = new List<DeckListEntry>(decks.Count);
+            foreach (Deck deck in decks)
+            {
+                if (summaryById.TryGetValue(deck.Id.Value, out DeckSummary? summary))
+                {
+                    entries.Add(new DeckListEntry(
+                        deck.Id, summary.DisplayName, summary.DueCount, summary.TotalCount));
+                }
+                else
+                {
+                    entries.Add(new DeckListEntry(
+                        deck.Id, deck.DisplayName, 0, deck.Cards.Count));
+                }
+            }
+
+            IReadOnlyList<DeckListEntry> ordered = DeckOrdering.Order(entries);
+
+            DeckButtonModel[] models = new DeckButtonModel[ordered.Count];
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                DeckListEntry entry = ordered[i];
+                models[i] = new DeckButtonModel(
+                    entry.Id, entry.DisplayName, entry.DueCount, entry.TotalCount);
             }
 
             _screen.Bind(models);

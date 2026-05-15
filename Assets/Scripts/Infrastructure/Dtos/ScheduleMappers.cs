@@ -76,6 +76,41 @@ namespace MemoryFoyer.Infrastructure.Dtos
                 Source: source);
         }
 
+        // ── DeckSummary ───────────────────────────────────────────────────────
+
+        public static DeckSummaryDto ToDto(DeckSummary summary)
+        {
+            return new DeckSummaryDto
+            {
+                deckId = summary.Id.Value,
+                displayName = summary.DisplayName,
+                dueCount = summary.DueCount,
+                newCount = summary.NewCount,
+                totalCount = summary.TotalCount,
+            };
+        }
+
+        public static DeckSummary FromDto(DeckSummaryDto dto)
+        {
+            return new DeckSummary(
+                Id: new DeckId(dto.deckId),
+                DisplayName: dto.displayName,
+                DueCount: dto.dueCount,
+                NewCount: dto.newCount,
+                TotalCount: dto.totalCount);
+        }
+
+        public static IReadOnlyList<DeckSummary> FromDtos(DeckSummaryDto[] dtos)
+        {
+            List<DeckSummary> summaries = new List<DeckSummary>(dtos.Length);
+            foreach (DeckSummaryDto dto in dtos)
+            {
+                summaries.Add(FromDto(dto));
+            }
+
+            return summaries;
+        }
+
         // ── SessionResult ─────────────────────────────────────────────────────
 
         public static SessionResultDto ToDto(SessionResult result)

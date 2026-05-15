@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryFoyer.Application.Http;
@@ -18,6 +19,35 @@ namespace MemoryFoyer.Infrastructure.Persistence
         {
             _http = http;
             _clock = clock;
+        }
+
+        public async UniTask<IReadOnlyList<DeckSummary>> GetDeckSummariesAsync(CancellationToken ct = default)
+        {
+            const string path = "/decks";
+            try
+            {
+                DeckSummaryDto[] dtos = await _http.GetArrayAsync<DeckSummaryDto>(path, ct);
+                return ScheduleMappers.FromDtos(dtos);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (HttpTransportException ex)
+            {
+                throw new ScheduleStoreUnavailableException(
+                    $"GET {path} failed: {ex.Message}", ex);
+            }
+            catch (HttpContractException ex)
+            {
+                throw new ScheduleStoreContractException(
+                    $"GET {path} returned contract error: {ex.Message}", ex.StatusCode, ex);
+            }
+            catch (FormatException ex)
+            {
+                throw new ScheduleStoreContractException(
+                    "malformed decks payload", null, ex);
+            }
         }
 
         public async UniTask<DeckSchedule> GetDeckScheduleAsync(DeckId deckId, CancellationToken ct = default)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryFoyer.Application.Analytics;
@@ -26,6 +27,28 @@ namespace MemoryFoyer.Application.Persistence
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
+        }
+
+        public async UniTask<IReadOnlyList<DeckSummary>> GetDeckSummariesAsync(
+            CancellationToken ct = default)
+        {
+            try
+            {
+                IReadOnlyList<DeckSummary> summaries = await _inner.GetDeckSummariesAsync(ct);
+                _cache.SaveDeckSummaries(summaries);
+                return summaries;
+            }
+            catch (ScheduleStoreUnavailableException)
+            {
+                IReadOnlyList<DeckSummary>? cached = _cache.LoadDeckSummaries();
+                if (cached is not null)
+                {
+                    _analytics.TrackOfflineFallback("GetDeckSummaries");
+                    return cached;
+                }
+
+                throw;
+            }
         }
 
         public async UniTask<DeckSchedule> GetDeckScheduleAsync(

@@ -20,18 +20,27 @@ namespace MemoryFoyer.Infrastructure.Http
             _config = config;
         }
 
-        public UniTask<TResponse> GetAsync<TResponse>(string path, CancellationToken ct = default)
+        public async UniTask<TResponse> GetAsync<TResponse>(string path, CancellationToken ct = default)
         {
-            return SendWithRetryAsync<TResponse>(HttpMethod.Get, path, body: null, ct);
+            (string text, int status) = await SendWithRetryAsync(HttpMethod.Get, path, body: null, ct);
+            return ParseJson<TResponse>(text, status);
         }
 
-        public UniTask<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken ct = default)
+        public async UniTask<TItem[]> GetArrayAsync<TItem>(string path, CancellationToken ct = default)
+        {
+            (string text, int status) = await SendWithRetryAsync(HttpMethod.Get, path, body: null, ct);
+            return ParseJsonArray<TItem>(text, status);
+        }
+
+        public async UniTask<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken ct = default)
         {
             string json = JsonUtility.ToJson(body);
-            return SendWithRetryAsync<TResponse>(HttpMethod.Post, path, json, ct);
+            (string text, int status) = await SendWithRetryAsync(HttpMethod.Post, path, json, ct);
+            return ParseJson<TResponse>(text, status);
         }
 
-        private async UniTask<TResponse> SendWithRetryAsync<TResponse>(HttpMethod method, string path, string? body, CancellationToken ct)
+        private async UniTask<(string Text, int StatusCode)> SendWithRetryAsync(
+            HttpMethod method, string path, string? body, CancellationToken ct)
         {
             int attempt = 0;
             int maxAttempts = 1 + Math.Max(0, _config.Retries);
@@ -41,7 +50,7 @@ namespace MemoryFoyer.Infrastructure.Http
                 attempt++;
                 try
                 {
-                    return await SendOnceAsync<TResponse>(method, path, body, ct);
+                    return await SendOnceAsync(method, path, body, ct);
                 }
                 catch (HttpTransportException)
                 {
@@ -54,7 +63,8 @@ namespace MemoryFoyer.Infrastructure.Http
             }
         }
 
-        private async UniTask<TResponse> SendOnceAsync<TResponse>(HttpMethod method, string path, string? body, CancellationToken ct)
+        private async UniTask<(string Text, int StatusCode)> SendOnceAsync(
+            HttpMethod method, string path, string? body, CancellationToken ct)
         {
             string url = ComposeUrl(_config.BaseUrl, path);
 
@@ -83,7 +93,7 @@ namespace MemoryFoyer.Infrastructure.Http
             }
 
             string responseText = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
-            return ParseJson<TResponse>(responseText, (int)request.responseCode);
+            return (responseText, (int)request.responseCode);
         }
 
         private static UnityWebRequest BuildPostRequest(string url, string jsonBody)
@@ -140,6 +150,36 @@ namespace MemoryFoyer.Infrastructure.Http
             {
                 throw new HttpContractException(statusCode, responseText, "malformed JSON", ex);
             }
+        }
+
+        // JsonUtility cannot deserialize a bare top-level JSON array, so wrap the
+        // payload as {"items":<array>} and parse via a serializable wrapper.
+        private static TItem[] ParseJsonArray<TItem>(string responseText, int statusCode)
+        {
+            try
+            {
+                string wrapped = "{\"items\":" + responseText + "}";
+                ArrayWrapper<TItem> parsed = JsonUtility.FromJson<ArrayWrapper<TItem>>(wrapped);
+                if (parsed is null || parsed.items is null)
+                {
+                    throw new HttpContractException(statusCode, responseText, "malformed JSON: expected array");
+                }
+                return parsed.items;
+            }
+            catch (HttpContractException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new HttpContractException(statusCode, responseText, "malformed JSON array", ex);
+            }
+        }
+
+        [Serializable]
+        private sealed class ArrayWrapper<T>
+        {
+            public T[] items = Array.Empty<T>();
         }
 
         private static string ComposeUrl(string baseUrl, string path)

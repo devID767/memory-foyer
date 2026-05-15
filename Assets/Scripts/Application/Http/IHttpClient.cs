@@ -6,6 +6,7 @@ namespace MemoryFoyer.Application.Http
     public interface IHttpClient
     {
         UniTask<TResponse> GetAsync<TResponse>(string path, CancellationToken ct = default);
+        UniTask<TItem[]> GetArrayAsync<TItem>(string path, CancellationToken ct = default);
         UniTask<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken ct = default);
     }
 }
