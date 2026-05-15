@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Infrastructure::MemoryFoyer.Infrastructure.ScriptableObjects.DeckAsset
   _deckId: idioms
   _displayName: English Idioms
-  _description: 30 common English idioms and their meanings.
+  _description: 32 common English idioms and their meanings.
   _newCardsPerDay: 8
   _icon: {fileID: 21300000, guid: 6050b9becaa334d1d90f38ae8181be65, type: 3}
   _cards:
@@ -108,3 +108,9 @@ MonoBehaviour:
   - _cardId: idioms:30
     _front: Time flies
     _back: Time passes quickly
+  - _cardId: idioms:31
+    _front: To come up with
+    _back: Produce or think of an idea or plan
+  - _cardId: idioms:32
+    _front: Take into account
+    _back: Consider something when making a decision or judgment
