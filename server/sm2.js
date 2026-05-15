@@ -93,7 +93,13 @@ function scheduleReview(state, grade, reviewedAt) {
         let raw;
         if (newReps === 1) raw = 1;
         else if (newReps === 2) raw = 6;
-        else raw = roundAwayFromZero(state.intervalDays * state.easeFactor);
+        else {
+            // Must stay byte-identical with C# Sm2Algorithm.EffectiveInterval (GDD §4).
+            // Negative elapsed (early review) keeps the stored interval by design (GDD §4.6).
+            const elapsedDays = Math.floor((reviewedAt.getTime() - state.dueAt.getTime()) / DAY_MS);
+            const effectiveInterval = Math.max(state.intervalDays, elapsedDays);
+            raw = roundAwayFromZero(effectiveInterval * state.easeFactor);
+        }
         const newInterval = clamp(raw, INTERVAL_MIN, INTERVAL_MAX);
         const g = grade;
         const newEf = Math.max(EF_MIN, state.easeFactor + (0.1 - (5 - g) * (0.08 + (5 - g) * 0.02)));

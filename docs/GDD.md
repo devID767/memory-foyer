@@ -99,7 +99,14 @@ The two stages differ only at the moment of graduation:
 - Next interval (clamped to ≤ 365 days):
   - `Reps == 1` → 1 day
   - `Reps == 2` → 6 days
-  - else → `round(previousInterval × EaseFactor)`
+  - else → `round(effectiveInterval × EaseFactor)`, where
+    `effectiveInterval = max(previousInterval, floor(daysBetween(DueAt, reviewedAt)))`
+    — **overdue credit**: a correctly-recalled card reviewed later than its `DueAt`
+    earns the next interval from the time it actually survived, not the stale stored
+    interval, so a backlog cleared after a long absence scatters forward instead of
+    re-clustering. Early/on-time reviews (elapsed ≤ `previousInterval`) keep
+    `previousInterval`, so prior behavior is unchanged. The `Reps == 1/2` literal
+    arms are not affected.
 - `EaseFactor := EaseFactor + (0.1 − (5 − grade) × (0.08 + (5 − grade) × 0.02))`, clamped to ≥ 1.3
 - `DueAt := reviewedAt + IntervalDays`
 
@@ -115,8 +122,8 @@ After working through the relearning queue (per §4.3), the card graduates back 
 ### 4.5 Determinism
 
 - Time flows through `IClock`.
-- The algorithm is a pure function: `(CardState, Grade, Now) → CardState`. No randomness — session ordering also deterministic (oldest `DueAt` first, ties broken by stable `cardId`).
-- All operations are unit-tested across ~25 cases including learning, graduation, lapse-from-long-interval, EF floor, interval cap.
+- The algorithm is a pure function: `(CardState, Grade, Now) → CardState`. No randomness — overdue credit is a deterministic function of `DueAt`/`reviewedAt`; session ordering also deterministic (oldest `DueAt` first, ties broken by stable `cardId`).
+- All operations are unit-tested across ~32 cases including learning, graduation, lapse-from-long-interval, EF floor, interval cap, and overdue credit (late/early/on-time/clamp). Client and server fixtures assert byte-identical numbers.
 
 ### 4.6 Input validation (preconditions)
 
@@ -124,7 +131,7 @@ After working through the relearning queue (per §4.3), the card graduates back 
 
 - `grade` is the `ReviewGrade` enum on the client; the server validates the integer is in `{0, 3, 4, 5}` and rejects with `400` otherwise.
 - `state.EaseFactor` is assumed `≥ 1.3` (the algorithm clamps after each update; a corrupted store would only ever drift upward, not below the floor — a pre-existing `< 1.3` value is silently clamped to `1.3` on next read).
-- `now` may be `< state.DueAt` (early review). The algorithm treats it as a normal review and recomputes from `now`, not from `DueAt`.
+- `now` may be `< state.DueAt` (early review). The algorithm treats it as a normal review and recomputes from `now`; overdue credit (§4.4) yields `previousInterval` for early/on-time reviews, so early-review behavior is unchanged. A *late* review (`now > state.DueAt`) additionally earns overdue credit per §4.4.
 - `state.Repetitions ≥ 0`, `state.IntervalDays ∈ [0, 365]` are invariants — never explicitly checked. Bug if violated.
 
 ## 5. Session Rules
@@ -321,6 +328,8 @@ This section makes the SR effect concrete. All times assume a 10-card daily new 
 - **Day 2.** First 10 are due (Reps=1 → 1 day intervals). 10 new cards are released. Total: 20 due. Player reviews. Some Goods, some Hards, two Agains.
 - **Day 7.** Mix: Reps=1 cards from Day 6 (1d interval), Reps=2 cards from Day 1 (6d interval), plus 10 new. ~30 due. Some cards are deep into long intervals already.
 - **Day 30.** Most original cards are at Reps≥3 with 15–60 day intervals. Daily load is small (5–15 cards) — the SR effect is paying off. New cards trickle in until deck is exhausted (~Day 5 for 44-card deck with budget of 10).
+
+This journey assumes near-daily use, so reviews land on-time and overdue credit (§4.4) yields `previousInterval` — the numbers above are unchanged by it. Overdue credit only activates after missed days: a card recalled correctly long after its `DueAt` jumps far forward instead of returning at its old short interval, so a backlog cleared after an absence does not re-cluster.
 
 This journey is also the **demo video script:** advance the `IClock` between recordings to capture all four states in 30 seconds.
 

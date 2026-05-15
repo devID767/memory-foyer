@@ -19,6 +19,17 @@ namespace MemoryFoyer.Tests.EditMode.Domain.Scheduling
             Stage: LearningStage.Review,
             LearningStepIndex: 0);
 
+        // Card whose DueAt differs from the moment it is actually reviewed —
+        // used to exercise overdue credit (GDD §4.4 / §4.6).
+        private static Sm2State ReviewCardDue(
+            int repetitions, int intervalDays, double easeFactor, DateTime dueAt) => new(
+            Repetitions: repetitions,
+            EaseFactor: easeFactor,
+            IntervalDays: intervalDays,
+            DueAt: dueAt,
+            Stage: LearningStage.Review,
+            LearningStepIndex: 0);
+
         [Test]
         public void Schedule_SecondReviewWithGood_UsesSixDayInterval()
         {
@@ -78,6 +89,91 @@ namespace MemoryFoyer.Tests.EditMode.Domain.Scheduling
 
             Assert.That(result.IntervalDays, Is.EqualTo(365));
             Assert.That(result.DueAt - ReviewedAt, Is.EqualTo(TimeSpan.FromDays(365)));
+        }
+
+        [Test]
+        public void Schedule_LateRememberedReview_CreditsElapsedTime()
+        {
+            DateTime reviewedAt = ReviewedAt + TimeSpan.FromDays(40);
+
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 10, 2.5, ReviewedAt), ReviewGrade.Good, reviewedAt);
+
+            // effective = max(10, 40) = 40 → round(40 * 2.5) = 100 (was 25 pre-credit).
+            Assert.That(result.IntervalDays, Is.EqualTo(100));
+            Assert.That(result.DueAt - reviewedAt, Is.EqualTo(TimeSpan.FromDays(100)));
+        }
+
+        [Test]
+        public void Schedule_LateButElapsedBelowStoredInterval_KeepsStoredInterval()
+        {
+            DateTime reviewedAt = ReviewedAt + TimeSpan.FromDays(12);
+
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 30, 2.0, ReviewedAt), ReviewGrade.Good, reviewedAt);
+
+            // effective = max(30, 12) = 30 → round(30 * 2.0) = 60.
+            Assert.That(result.IntervalDays, Is.EqualTo(60));
+        }
+
+        [Test]
+        public void Schedule_EarlyReview_IgnoresNegativeElapsed()
+        {
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 10, 2.5, ReviewedAt + TimeSpan.FromDays(5)), ReviewGrade.Good, ReviewedAt);
+
+            // elapsed = -5 → effective = max(10, -5) = 10 → round(25) = 25 (unchanged).
+            Assert.That(result.IntervalDays, Is.EqualTo(25));
+        }
+
+        [Test]
+        public void Schedule_OnTimeReview_Unchanged()
+        {
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 10, 2.5, ReviewedAt), ReviewGrade.Good, ReviewedAt);
+
+            // elapsed = 0 → effective = 10 → round(25) = 25 (unchanged).
+            Assert.That(result.IntervalDays, Is.EqualTo(25));
+        }
+
+        [Test]
+        public void Schedule_VeryLateReview_StillClampsAt365Days()
+        {
+            DateTime reviewedAt = ReviewedAt + TimeSpan.FromDays(300);
+
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 100, 2.5, ReviewedAt), ReviewGrade.Good, reviewedAt);
+
+            // effective = 300 → round(300 * 2.5) = 750 → clamped 365.
+            Assert.That(result.IntervalDays, Is.EqualTo(365));
+            Assert.That(result.DueAt - reviewedAt, Is.EqualTo(TimeSpan.FromDays(365)));
+        }
+
+        [Test]
+        public void Schedule_LiteralIntervalArms_UnaffectedByLateness()
+        {
+            DateTime reviewedAt = ReviewedAt + TimeSpan.FromDays(100);
+
+            Sm2State firstReview = Sm2Algorithm.Schedule(
+                ReviewCardDue(0, 999, 2.5, ReviewedAt), ReviewGrade.Good, reviewedAt);
+            Sm2State secondReview = Sm2Algorithm.Schedule(
+                ReviewCardDue(1, 999, 2.5, ReviewedAt), ReviewGrade.Good, reviewedAt);
+
+            // newReps 1 and 2 use the literal 1 / 6 arms — overdue credit must not leak in.
+            Assert.That(firstReview.IntervalDays, Is.EqualTo(1));
+            Assert.That(secondReview.IntervalDays, Is.EqualTo(6));
+        }
+
+        [Test]
+        public void Schedule_SubDayLateness_FloorsElapsedToZero()
+        {
+            DateTime reviewedAt = ReviewedAt + TimeSpan.FromHours(23);
+
+            Sm2State result = Sm2Algorithm.Schedule(
+                ReviewCardDue(2, 10, 2.5, ReviewedAt), ReviewGrade.Good, reviewedAt);
+
+            // floor(23h) = 0 → effective = max(10, 0) = 10 → round(25) = 25.
+            Assert.That(result.IntervalDays, Is.EqualTo(25));
         }
     }
 }

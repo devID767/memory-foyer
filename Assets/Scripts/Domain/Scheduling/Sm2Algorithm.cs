@@ -98,6 +98,14 @@ namespace MemoryFoyer.Domain.Scheduling
             };
         }
 
+        // Must stay byte-identical with server/sm2.js (divergence is a bug — GDD §4).
+        // Negative elapsed (early review) keeps the stored interval by design (GDD §4.6).
+        private static int EffectiveInterval(Sm2State state, DateTime reviewedAt)
+        {
+            int elapsedDays = (int)Math.Floor((reviewedAt - state.DueAt).TotalDays);
+            return Math.Max(state.IntervalDays, elapsedDays);
+        }
+
         private static Sm2State ScheduleReview(Sm2State state, ReviewGrade grade, DateTime reviewedAt)
         {
             switch (grade)
@@ -127,7 +135,7 @@ namespace MemoryFoyer.Domain.Scheduling
                         {
                             1 => 1,
                             2 => 6,
-                            _ => (int)Math.Round(state.IntervalDays * state.EaseFactor, MidpointRounding.AwayFromZero),
+                            _ => (int)Math.Round(EffectiveInterval(state, reviewedAt) * state.EaseFactor, MidpointRounding.AwayFromZero),
                         };
                         int newInterval = Math.Clamp(rawInterval, 1, 365);
                         int g = (int)grade;

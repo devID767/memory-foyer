@@ -118,3 +118,65 @@ test('Hard adjusts EF downward: 2.5 + (0.1 - 2*(0.08+2*0.02)) = 2.36', () => {
     const r = schedule(s, 3, T0);
     assert.ok(Math.abs(r.easeFactor - 2.36) < 1e-9);
 });
+
+// --- Overdue credit (mirrors C# Sm2AlgorithmSubsequentReviewsAndEfBoundsTests, byte-identical) ---
+
+const DAY = 24 * 60 * 60 * 1000;
+const after = (ms) => new Date(T0.getTime() + ms);
+
+test('overdue credit: late remembered review credits elapsed time', () => {
+    const s = { reps: 2, easeFactor: 2.5, intervalDays: 10, dueAt: T0, stage: 'review', learningStep: 0 };
+    const reviewedAt = after(40 * DAY);
+    const r = schedule(s, 4, reviewedAt);
+    // effective = max(10, 40) = 40 → round(40 * 2.5) = 100 (was 25 pre-credit).
+    assert.equal(r.intervalDays, 100);
+    assert.equal(r.dueAt.getTime() - reviewedAt.getTime(), 100 * DAY);
+});
+
+test('overdue credit: late but elapsed below stored interval keeps stored', () => {
+    const s = { reps: 2, easeFactor: 2.0, intervalDays: 30, dueAt: T0, stage: 'review', learningStep: 0 };
+    const r = schedule(s, 4, after(12 * DAY));
+    // effective = max(30, 12) = 30 → round(30 * 2.0) = 60.
+    assert.equal(r.intervalDays, 60);
+});
+
+test('overdue credit: early review ignores negative elapsed', () => {
+    const s = { reps: 2, easeFactor: 2.5, intervalDays: 10, dueAt: after(5 * DAY), stage: 'review', learningStep: 0 };
+    const r = schedule(s, 4, T0);
+    // elapsed = -5 → effective = max(10, -5) = 10 → round(25) = 25 (unchanged).
+    assert.equal(r.intervalDays, 25);
+});
+
+test('overdue credit: on-time review unchanged', () => {
+    const s = { reps: 2, easeFactor: 2.5, intervalDays: 10, dueAt: T0, stage: 'review', learningStep: 0 };
+    const r = schedule(s, 4, T0);
+    // elapsed = 0 → effective = 10 → round(25) = 25.
+    assert.equal(r.intervalDays, 25);
+});
+
+test('overdue credit: very late review still clamps at 365', () => {
+    const s = { reps: 2, easeFactor: 2.5, intervalDays: 100, dueAt: T0, stage: 'review', learningStep: 0 };
+    const reviewedAt = after(300 * DAY);
+    const r = schedule(s, 4, reviewedAt);
+    // effective = 300 → round(300 * 2.5) = 750 → clamped 365.
+    assert.equal(r.intervalDays, 365);
+    assert.equal(r.dueAt.getTime() - reviewedAt.getTime(), 365 * DAY);
+});
+
+test('overdue credit: literal interval arms unaffected by lateness', () => {
+    const reviewedAt = after(100 * DAY);
+    const first = schedule(
+        { reps: 0, easeFactor: 2.5, intervalDays: 999, dueAt: T0, stage: 'review', learningStep: 0 }, 4, reviewedAt);
+    const second = schedule(
+        { reps: 1, easeFactor: 2.5, intervalDays: 999, dueAt: T0, stage: 'review', learningStep: 0 }, 4, reviewedAt);
+    // newReps 1 and 2 use the literal 1 / 6 arms — overdue credit must not leak in.
+    assert.equal(first.intervalDays, 1);
+    assert.equal(second.intervalDays, 6);
+});
+
+test('overdue credit: sub-day lateness floors elapsed to zero', () => {
+    const s = { reps: 2, easeFactor: 2.5, intervalDays: 10, dueAt: T0, stage: 'review', learningStep: 0 };
+    const r = schedule(s, 4, after(23 * 60 * 60 * 1000));
+    // floor(23h) = 0 → effective = max(10, 0) = 10 → round(25) = 25.
+    assert.equal(r.intervalDays, 25);
+});
