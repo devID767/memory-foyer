@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="pane-row">
+        <ui:VisualElement class="left-pane">
+            <ui:Label text="Decks" class="pane-header" />
+            <ui:ListView name="deck-list" />
+        </ui:VisualElement>
+        <ui:VisualElement name="editor-pane" class="right-pane">
+            <ui:Label name="placeholder" text="Select a deck" />
+            <ui:VisualElement name="editor-root" />
+            <ui:Button name="save-button" text="Save" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -105,7 +105,7 @@ Tag: `v0.3.5-backend`.
 
 Tag: `v0.4-foyer-mvp`.
 
-## Phase 6: Review UI overlay [CURRENT]
+## Phase 6: Review UI overlay
 
 - [x] **6.1** (2026-05-11 → 2026-05-11) Canvas layout with card display + 4 grade buttons
 - [x] **6.2** (2026-05-12 → 2026-05-12) `ReviewView` MonoBehaviour
@@ -116,7 +116,7 @@ Tag: `v0.4-foyer-mvp`.
 
 Tag: `v0.5-mvp`.
 
-## Phase 7: Editor tool (UI Toolkit)
+## Phase 7: Editor tool (UI Toolkit) [CURRENT]
 
 `DeckExporter` (3.5.12) already covers the deck → server sync path. Phase 7 adds a richer authoring surface on top.
 

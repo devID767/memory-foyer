@@ -1,0 +1,30 @@
+.pane-row {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.left-pane {
+    width: 200px;
+    border-right-width: 1px;
+    border-right-color: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+}
+
+.right-pane {
+    flex-grow: 1;
+    padding: 8px;
+}
+
+.pane-header {
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+#deck-list {
+    flex-grow: 1;
+}
+
+#save-button {
+    margin-top: 8px;
+    align-self: flex-start;
+}
