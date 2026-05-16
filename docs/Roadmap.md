@@ -83,7 +83,7 @@ May proceed in parallel with Phase 1 — no shared files with the Unity client.
 - [x] **3.5.9** `server/server.test.js` — integration tests (~7 cases) _(2026-05-03)_
 - [x] **3.5.10** `server/openapi.yaml` _(2026-05-03)_
 - [x] **3.5.11** `server/README.md` — run, curl, schema, why-authoritative _(2026-05-03)_
-- [x] **3.5.12** `DeckExporter` editor tool (`Tools → Memory Foyer → Export Decks`) — generates `server/decks.json` from DeckAssets _(2026-05-04)_
+- [x] **3.5.12** `DeckExporter` editor tool (`Tools → Memory Foyer → Export Decks`) — generates `server/decks.json` from DeckAssets _(2026-05-04 → superseded 2026-05-16 by Phase 7.5: export folded into the Deck Author window, standalone menu item removed)_
 
 Tag: `v0.3.5-backend`.
 
@@ -118,12 +118,13 @@ Tag: `v0.5-mvp`.
 
 ## Phase 7: Editor tool (UI Toolkit) [CURRENT]
 
-`DeckExporter` (3.5.12) already covers the deck → server sync path. Phase 7 adds a richer authoring surface on top.
+The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into the `DeckAuthorWindow` Export button (7.5). Phase 7 is the single authoring surface.
 
-- [ ] **7.1** `DeckAuthorWindow` scaffold (`Tools → Memory Foyer → Deck Author`)
-- [ ] **7.2** Deck list pane (ListView from `AssetDatabase.FindAssets`)
-- [ ] **7.3** Card editor pane
-- [ ] **7.4** CSV import button _(stretch)_
+- [x] **7.1** `DeckAuthorWindow` scaffold (`Tools → Memory Foyer → Deck Author`) _(2026-05-16)_
+- [x] **7.2** Deck list pane (ListView from `AssetDatabase.FindAssets`) _(2026-05-16)_
+- [x] **7.3** Card editor pane _(2026-05-16)_
+- [x] **7.4** ~~CSV import button~~ — cut 2026-05-16, stretch goal not pursued _(stretch → cut)_
+- [x] **7.5** Export button — `DeckExportService` + `DeckJsonSerializer` (folds in 3.5.12 `DeckExporter`; standalone menu item removed) _(2026-05-16)_
 
 ## Phase 8: README, GIFs, polish
 

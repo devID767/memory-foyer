@@ -45,7 +45,7 @@ Assets/
     Infrastructure/     # I/O — HTTP client, ScriptableObject deck repo, analytics
     Presentation/       # Unity-facing — Foyer scene presenters, Review overlay
     Composition/        # VContainer LifetimeScopes (composition root)
-  Editor/               # DeckExporter (export DeckAssets → server/decks.json); DeckAuthorWindow planned in Phase 7
+  Editor/               # DeckAuthorWindow (Tools → Memory Foyer → Deck Author): edit DeckAssets + Export → server/decks.json; DeckAssetValidation shared
   Tests/EditMode/       # Logic tests (NUnit)
   Resources/Decks/      # DeckAsset SOs (loaded via Resources.Load)
   Settings/             # URP render pipeline settings

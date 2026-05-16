@@ -20,6 +20,7 @@ namespace MemoryFoyer.Editor.DeckAuthor
         private VisualElement _editorRoot = null!;
         private Label _placeholder = null!;
         private Button _saveButton = null!;
+        private Button _exportButton = null!;
 
         private SerializedObject? _serializedObject;
         private DeckAsset? _selectedDeck;
@@ -50,8 +51,10 @@ namespace MemoryFoyer.Editor.DeckAuthor
             _editorRoot = rootVisualElement.Q<VisualElement>("editor-root");
             _placeholder = rootVisualElement.Q<Label>("placeholder");
             _saveButton = rootVisualElement.Q<Button>("save-button");
+            _exportButton = rootVisualElement.Q<Button>("export-button");
 
             _saveButton.clicked += OnSaveClicked;
+            _exportButton.clicked += OnExportClicked;
 
             _deckList.makeItem = () => new Label();
             _deckList.bindItem = (element, i) =>
@@ -163,6 +166,19 @@ namespace MemoryFoyer.Editor.DeckAuthor
             AssetDatabase.SaveAssets();
             _deckList.RefreshItems();
             ShowNotification(new GUIContent("Saved"));
+        }
+
+        private void OnExportClicked()
+        {
+            DeckExportResult result = DeckExportService.Export();
+            if (!result.Success)
+            {
+                EditorUtility.DisplayDialog("Deck Author — export failed", result.Message, "OK");
+                return;
+            }
+
+            Debug.Log($"[DeckAuthorWindow] {result.Message}");
+            ShowNotification(new GUIContent("Exported"));
         }
 
         private void OnFocus()

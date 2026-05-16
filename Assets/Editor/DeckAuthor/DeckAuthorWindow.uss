@@ -24,7 +24,11 @@
     flex-grow: 1;
 }
 
-#save-button {
+.button-row {
+    flex-direction: row;
     margin-top: 8px;
-    align-self: flex-start;
+}
+
+.button-row > Button {
+    margin-right: 4px;
 }

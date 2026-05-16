@@ -7,7 +7,10 @@
         <ui:VisualElement name="editor-pane" class="right-pane">
             <ui:Label name="placeholder" text="Select a deck" />
             <ui:VisualElement name="editor-root" />
-            <ui:Button name="save-button" text="Save" />
+            <ui:VisualElement name="button-row" class="button-row">
+                <ui:Button name="save-button" text="Save" />
+                <ui:Button name="export-button" text="Export → server/decks.json" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

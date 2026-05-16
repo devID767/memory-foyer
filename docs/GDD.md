@@ -200,7 +200,7 @@ Decks are `ScriptableObject` assets under `Assets/Resources/Decks/`.
 2. **Greek Myths** — 20 cards, `NewCardsPerDay = 5`
 3. **English Idioms** — 30 cards, `NewCardsPerDay = 8`
 
-Currently decks are authored by editing `DeckAsset` directly in the Inspector (fields exposed via `[SerializeField]`); changes are pushed to the server through the **Deck Exporter** (`Tools → Memory Foyer → Export Decks`, `Assets/Editor/DeckExporter.cs`), which writes `server/decks.json`. A full `DeckAuthorWindow` (UI Toolkit) with CSV import is a Phase 7 task.
+Decks are authored in the **Deck Author** window (`Tools → Memory Foyer → Deck Author`, `Assets/Editor/DeckAuthor/`), a UI Toolkit editor that lists every `DeckAsset`, edits its fields, and validates the collection on Save. Its **Export** button writes the server-side `server/decks.json` snapshot (load → validate → serialize via `DeckExportService` + `DeckJsonSerializer`). CSV import is a Phase 7 stretch task.
 
 ## 8. Backend
 
@@ -350,7 +350,7 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 - **Offline is degraded, not full.** With a populated cache the client can start a session and queue uploads (idempotent on `sessionId`). First-run without server = empty UI. Long offline = the cached `dueAt` values drift behind reality (no schedules accumulate without round-trips).
 - **Reconnect order:** when the client comes back online with both pending uploads and a stale cache, `CachingScheduleStore` first drains the pending-uploads queue (one `POST /sessions` per session in FIFO order, idempotent), then performs a fresh `GET /decks/:id/schedule` and overwrites the cache. This guarantees the schedule the user sees reflects all locally-completed work.
 - **No retention mechanics.** No notifications, streaks, goals — by design. The app is a tool, not a service.
-- **Deck count is data-driven.** Adding a new deck requires authoring a `DeckAsset` (with optional `_icon`) under `Assets/Resources/Decks/`, re-running the Deck Exporter (`Tools → Memory Foyer → Export Decks`) to refresh `server/decks.json`, and — if visual layout requires it — adjusting `FoyerLayoutConfig.MaxDecksToShow` and `Spacing`. No scene edits are required; the foyer view spawns cards from the repository result.
+- **Deck count is data-driven.** Adding a new deck requires authoring a `DeckAsset` (with optional `_icon`) under `Assets/Resources/Decks/`, clicking **Export** in the Deck Author window (`Tools → Memory Foyer → Deck Author`) to refresh `server/decks.json`, and — if visual layout requires it — adjusting `FoyerLayoutConfig.MaxDecksToShow` and `Spacing`. No scene edits are required; the foyer view spawns cards from the repository result.
 - **No localization.** UI is English-only.
 - **Mid-session hard-crash before upload loses pending grades in the queue.** `CachingScheduleStore` keeps pending uploads on disk in `JsonFileScheduleCache`, so a normal app close survives. A process crash before flush may drop the in-flight session. Acceptable for the portfolio; production would need a write-ahead log.
 
