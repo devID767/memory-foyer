@@ -82,6 +82,9 @@ namespace MemoryFoyer.Composition
 
             builder.Register<IReviewSessionService, ReviewSessionService>(Lifetime.Singleton);
 
+            builder.Register<SessionTelemetryListener>(Lifetime.Singleton);
+            builder.RegisterEntryPoint<SessionTelemetryStartable>();
+
             builder.RegisterEntryPoint<CompositionSmokeTest>();
         }
     }

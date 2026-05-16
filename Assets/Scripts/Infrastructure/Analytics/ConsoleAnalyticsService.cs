@@ -1,6 +1,7 @@
 using System;
 using MemoryFoyer.Application.Analytics;
 using MemoryFoyer.Domain.Models;
+using MemoryFoyer.Domain.Scheduling;
 using UnityEngine;
 
 namespace MemoryFoyer.Infrastructure.Analytics
@@ -10,6 +11,11 @@ namespace MemoryFoyer.Infrastructure.Analytics
         public void TrackSessionStarted(Guid sessionId, DeckId deckId, int cardCount)
         {
             Debug.Log($"[Analytics] SessionStarted sessionId={sessionId} deckId={deckId.Value} cards={cardCount}");
+        }
+
+        public void TrackCardReviewed(Guid sessionId, CardId cardId, ReviewGrade grade, DateTime nextDueAt)
+        {
+            Debug.Log($"[Analytics] CardReviewed sessionId={sessionId} cardId={cardId.Value} grade={grade} nextDue={nextDueAt:o}");
         }
 
         public void TrackSessionFinished(Guid sessionId, int reviewedCount, TimeSpan duration)

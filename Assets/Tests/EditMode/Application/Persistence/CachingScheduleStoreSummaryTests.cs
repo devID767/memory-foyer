@@ -6,6 +6,7 @@ using NUnit.Framework;
 using MemoryFoyer.Application.Analytics;
 using MemoryFoyer.Application.Persistence;
 using MemoryFoyer.Domain.Models;
+using MemoryFoyer.Domain.Scheduling;
 
 namespace MemoryFoyer.Tests.EditMode.Application.Persistence
 {
@@ -116,6 +117,7 @@ namespace MemoryFoyer.Tests.EditMode.Application.Persistence
             public List<string> OfflineFallbacks { get; } = new();
 
             public void TrackSessionStarted(Guid sessionId, DeckId deckId, int cardCount) { }
+            public void TrackCardReviewed(Guid sessionId, CardId cardId, ReviewGrade grade, DateTime nextDueAt) { }
             public void TrackSessionFinished(Guid sessionId, int reviewedCount, TimeSpan duration) { }
             public void TrackOfflineFallback(string operation) => OfflineFallbacks.Add(operation);
         }

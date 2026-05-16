@@ -4,7 +4,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
 using NUnit.Framework;
-using MemoryFoyer.Application.Analytics;
 using MemoryFoyer.Application.Events;
 using MemoryFoyer.Application.Persistence;
 using MemoryFoyer.Application.Repositories;
@@ -39,7 +38,6 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             Assert.That(f.SessionStarted.Published[0].DeckId, Is.EqualTo(Deck));
             Assert.That(f.SessionStarted.Published[0].CardCount, Is.EqualTo(3));
             Assert.That(f.SessionStarted.Published[0].StartedAt, Is.EqualTo(Now));
-            Assert.That(f.Analytics.SessionsStarted.Count, Is.EqualTo(1));
         }
 
         [Test]
@@ -144,7 +142,6 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             Assert.That(f.SessionReviewed.Published.Count, Is.EqualTo(1));
             Assert.That(f.SessionReviewed.Published[0].ReviewedCount, Is.EqualTo(1));
             Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(0));
-            Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -176,7 +173,7 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             Assert.That(f.Store.UploadedResults.Count, Is.EqualTo(1));
             Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(1));
             Assert.That(f.SessionUploadCompleted.Published[0].Success, Is.True);
-            Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(1));
+            Assert.That(f.SessionUploadCompleted.Published[0].ReviewedCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -192,7 +189,7 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             Assert.That(f.Service.State, Is.EqualTo(SessionState.Error));
             Assert.That(f.SessionUploadCompleted.Published.Count, Is.EqualTo(1));
             Assert.That(f.SessionUploadCompleted.Published[0].Success, Is.False);
-            Assert.That(f.Analytics.SessionsFinished.Count, Is.EqualTo(0));
+            Assert.That(f.SessionUploadCompleted.Published[0].ReviewedCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -261,22 +258,20 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
             FakeDeckRepository repo = new(deck);
             FakeScheduleStore store = new(deckSchedule);
             FakeClock clock = new(Now);
-            FakeAnalytics analytics = new();
             FakePublisher<SessionStartedEvent> started = new();
             FakePublisher<CardReviewedEvent> reviewed = new();
             FakePublisher<SessionReviewedEvent> sessionReviewed = new();
             FakePublisher<SessionUploadCompletedEvent> uploadCompleted = new();
 
             ReviewSessionService service = new(
-                repo, store, clock, analytics, started, reviewed, sessionReviewed, uploadCompleted);
+                repo, store, clock, started, reviewed, sessionReviewed, uploadCompleted);
 
-            return new Fixture(service, store, analytics, started, reviewed, sessionReviewed, uploadCompleted);
+            return new Fixture(service, store, started, reviewed, sessionReviewed, uploadCompleted);
         }
 
         private sealed record Fixture(
             ReviewSessionService Service,
             FakeScheduleStore Store,
-            FakeAnalytics Analytics,
             FakePublisher<SessionStartedEvent> SessionStarted,
             FakePublisher<CardReviewedEvent> CardReviewed,
             FakePublisher<SessionReviewedEvent> SessionReviewed,
@@ -344,22 +339,6 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
         {
             public FakeClock(DateTime utcNow) { UtcNow = utcNow; }
             public DateTime UtcNow { get; set; }
-        }
-
-        private sealed class FakeAnalytics : IAnalyticsService
-        {
-            public List<(Guid sessionId, DeckId deckId, int cardCount)> SessionsStarted { get; } = new();
-            public List<(Guid sessionId, int reviewedCount, TimeSpan duration)> SessionsFinished { get; } = new();
-            public List<string> OfflineFallbacks { get; } = new();
-
-            public void TrackSessionStarted(Guid sessionId, DeckId deckId, int cardCount)
-                => SessionsStarted.Add((sessionId, deckId, cardCount));
-
-            public void TrackSessionFinished(Guid sessionId, int reviewedCount, TimeSpan duration)
-                => SessionsFinished.Add((sessionId, reviewedCount, duration));
-
-            public void TrackOfflineFallback(string operation)
-                => OfflineFallbacks.Add(operation);
         }
 
         private sealed class FakePublisher<T> : IPublisher<T>

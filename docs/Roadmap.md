@@ -116,7 +116,7 @@ Tag: `v0.4-foyer-mvp`.
 
 Tag: `v0.5-mvp`.
 
-## Phase 7: Editor tool (UI Toolkit) [CURRENT]
+## Phase 7: Editor tool (UI Toolkit)
 
 The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into the `DeckAuthorWindow` Export button (7.5). Phase 7 is the single authoring surface.
 
@@ -126,7 +126,7 @@ The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into
 - [x] **7.4** ~~CSV import button~~ — cut 2026-05-16, stretch goal not pursued _(stretch → cut)_
 - [x] **7.5** Export button — `DeckExportService` + `DeckJsonSerializer` (folds in 3.5.12 `DeckExporter`; standalone menu item removed) _(2026-05-16)_
 
-## Phase 8: README, GIFs, polish
+## Phase 8: README, GIFs, polish [CURRENT]
 
 - [ ] **8.1** Capture `docs/foyer.gif` and `docs/review.gif`
 - [x] **8.2** Architecture mermaid diagram in `docs/architecture.md`

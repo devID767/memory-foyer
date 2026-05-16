@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
-using MemoryFoyer.Application.Analytics;
 using MemoryFoyer.Application.Events;
 using MemoryFoyer.Application.Persistence;
 using MemoryFoyer.Application.Repositories;
@@ -19,7 +18,6 @@ namespace MemoryFoyer.Application.Sessions
         private readonly IDeckRepository _deckRepository;
         private readonly IScheduleStore _scheduleStore;
         private readonly IClock _clock;
-        private readonly IAnalyticsService _analytics;
         private readonly IPublisher<SessionStartedEvent> _sessionStartedPublisher;
         private readonly IPublisher<CardReviewedEvent> _cardReviewedPublisher;
         private readonly IPublisher<SessionReviewedEvent> _sessionReviewedPublisher;
@@ -38,7 +36,6 @@ namespace MemoryFoyer.Application.Sessions
             IDeckRepository deckRepository,
             IScheduleStore scheduleStore,
             IClock clock,
-            IAnalyticsService analytics,
             IPublisher<SessionStartedEvent> sessionStartedPublisher,
             IPublisher<CardReviewedEvent> cardReviewedPublisher,
             IPublisher<SessionReviewedEvent> sessionReviewedPublisher,
@@ -47,7 +44,6 @@ namespace MemoryFoyer.Application.Sessions
             _deckRepository = deckRepository ?? throw new ArgumentNullException(nameof(deckRepository));
             _scheduleStore = scheduleStore ?? throw new ArgumentNullException(nameof(scheduleStore));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-            _analytics = analytics ?? throw new ArgumentNullException(nameof(analytics));
             _sessionStartedPublisher = sessionStartedPublisher ?? throw new ArgumentNullException(nameof(sessionStartedPublisher));
             _cardReviewedPublisher = cardReviewedPublisher ?? throw new ArgumentNullException(nameof(cardReviewedPublisher));
             _sessionReviewedPublisher = sessionReviewedPublisher ?? throw new ArgumentNullException(nameof(sessionReviewedPublisher));
@@ -77,9 +73,6 @@ namespace MemoryFoyer.Application.Sessions
 
         public async UniTask StartAsync(DeckId deckId, CancellationToken ct = default)
         {
-            // Per architecture.md: reentrancy is guarded — only Idle can start. Error is
-            // documented as "terminal until StartAsync is called again", so we permit the
-            // Error → Idle reset here as the explicit recovery path.
             if (_state == SessionState.Error)
             {
                 _state = SessionState.Idle;
@@ -104,9 +97,6 @@ namespace MemoryFoyer.Application.Sessions
 
                 DateTime now = _clock.UtcNow;
 
-                // Cards absent from the schedule are skipped: per GDD §5 the server is the
-                // authority on which cards are due (it applies the per-day new-card cap and
-                // returns the released schedule for the deck — released-new + non-new only).
                 IEnumerable<QueueEntry> due = deck.Cards
                     .Where(card => stateByCard.TryGetValue(card.Id, out Sm2State s) && s.DueAt <= now)
                     .Select(card => new QueueEntry(card.Id, card.Front, card.Back, stateByCard[card.Id]))
@@ -129,7 +119,6 @@ namespace MemoryFoyer.Application.Sessions
             }
 
             _sessionStartedPublisher.Publish(new SessionStartedEvent(_sessionId, _deckId, _total, _startedAt));
-            _analytics.TrackSessionStarted(_sessionId, _deckId, _total);
         }
 
         public void RevealCurrent()
@@ -216,7 +205,8 @@ namespace MemoryFoyer.Application.Sessions
                 // EnqueuePendingAsync). Surface the failure via the event so the foyer can
                 // reflect it; the next-launch drain replays the pending entry.
                 _state = SessionState.Error;
-                _sessionUploadCompletedPublisher.Publish(new SessionUploadCompletedEvent(sessionId, deckId, false));
+                _sessionUploadCompletedPublisher.Publish(new SessionUploadCompletedEvent(
+                    sessionId, deckId, false, reviewedCount, _clock.UtcNow - startedAt));
                 return;
             }
             catch
@@ -225,23 +215,18 @@ namespace MemoryFoyer.Application.Sessions
                 throw;
             }
 
-            // Reassign rather than Clear: the just-uploaded SessionResult holds a reference
-            // to the old list, so mutating it would alter what the inner store received.
             _queue.Clear();
             _reviews = new List<CardReview>();
             _total = 0;
             _pendingResult = null;
             _state = SessionState.Idle;
 
-            _sessionUploadCompletedPublisher.Publish(new SessionUploadCompletedEvent(sessionId, deckId, true));
-            _analytics.TrackSessionFinished(sessionId, reviewedCount, _clock.UtcNow - startedAt);
+            _sessionUploadCompletedPublisher.Publish(new SessionUploadCompletedEvent(
+                sessionId, deckId, true, reviewedCount, _clock.UtcNow - startedAt));
         }
 
         private async UniTask FinishReviewing(CancellationToken ct)
         {
-            // Snapshot reviews into a SessionResult held by the service; CommitAsync consumes
-            // it later. The pending-cache write happens here so a crash between Summary-shown
-            // and dismiss still has the data on disk for the next-launch drain.
             SessionResult result = new(_sessionId, _deckId, _reviews);
             _pendingResult = result;
 
