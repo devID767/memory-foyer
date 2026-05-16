@@ -331,8 +331,6 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
 
             public UniTask<bool> IsServerReachableAsync(CancellationToken ct = default)
                 => UniTask.FromResult(!ThrowOnGet);
-
-            public UniTask DrainPendingAsync(CancellationToken ct = default) => UniTask.CompletedTask;
         }
 
         private sealed class FakeClock : IClock

@@ -13,7 +13,7 @@ namespace MemoryFoyer.Application.Persistence
     /// DI in Phase 4 binds the public <c>IScheduleStore</c> slot to this class and
     /// injects <c>HttpScheduleStore</c> into the <c>inner</c> constructor parameter.
     /// </summary>
-    public sealed class CachingScheduleStore : IScheduleStore
+    public sealed class CachingScheduleStore : IScheduleStore, IPendingDrain
     {
         private readonly IScheduleStore _inner;
         private readonly IScheduleCache _cache;
@@ -101,8 +101,7 @@ namespace MemoryFoyer.Application.Persistence
             return _inner.IsServerReachableAsync(ct);
         }
 
-        // Concrete-only operation: not on IScheduleStore per architecture.md §Contracts.
-        // Called by ProjectLifetimeScope at startup (Phase 4) to flush queued sessions.
+        // IPendingDrain, kept off IScheduleStore per architecture.md §Contracts.
         public async UniTask DrainPendingAsync(CancellationToken ct = default)
         {
             foreach (SessionResult pending in _cache.LoadPending())

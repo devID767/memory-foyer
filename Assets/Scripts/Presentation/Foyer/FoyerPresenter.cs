@@ -18,7 +18,7 @@ namespace MemoryFoyer.Presentation.Foyer
     {
         private readonly IDeckRepository _deckRepository;
         private readonly IScheduleStore _scheduleStore;
-        private readonly CachingScheduleStore _cachingScheduleStore;
+        private readonly IPendingDrain _pendingDrain;
         private readonly IPublisher<DeckSelectedEvent> _deckSelectedPublisher;
         private readonly ISubscriber<BackToFoyerRequested> _backToFoyerSubscriber;
         private readonly FoyerScreen _screen;
@@ -28,7 +28,7 @@ namespace MemoryFoyer.Presentation.Foyer
         public FoyerPresenter(
             IDeckRepository deckRepository,
             IScheduleStore scheduleStore,
-            CachingScheduleStore cachingScheduleStore,
+            IPendingDrain pendingDrain,
             IPublisher<DeckSelectedEvent> deckSelectedPublisher,
             ISubscriber<BackToFoyerRequested> backToFoyerSubscriber,
             FoyerScreen screen,
@@ -37,7 +37,7 @@ namespace MemoryFoyer.Presentation.Foyer
         {
             _deckRepository = deckRepository;
             _scheduleStore = scheduleStore;
-            _cachingScheduleStore = cachingScheduleStore;
+            _pendingDrain = pendingDrain;
             _deckSelectedPublisher = deckSelectedPublisher;
             _backToFoyerSubscriber = backToFoyerSubscriber;
             _screen = screen;
@@ -84,7 +84,7 @@ namespace MemoryFoyer.Presentation.Foyer
         {
             try
             {
-                await _cachingScheduleStore.DrainPendingAsync(cancellation);
+                await _pendingDrain.DrainPendingAsync(cancellation);
             }
             catch (OperationCanceledException)
             {

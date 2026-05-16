@@ -86,6 +86,14 @@ UniTask<DeckSchedule>  UploadSessionAsync(SessionResult result); // returns the 
 UniTask<bool>          IsServerReachableAsync();             // cheap GET /health, used by offline banner
 ```
 
+### `IPendingDrain` (Application)
+
+```csharp
+UniTask DrainPendingAsync();   // flush queued offline sessions FIFO; called by FoyerPresenter at startup
+```
+
+Deliberately separate from `IScheduleStore`: draining the offline queue is a startup/reconnect concern, not part of the read/upload contract. `CachingScheduleStore` implements both; Presentation depends only on these Application interfaces, never the concrete composite.
+
 `DeckSchedule` is `record DeckSchedule(DeckId DeckId, IReadOnlyList<CardSchedule> Cards, DateTime FetchedAt, ScheduleSource Source)`. `ScheduleSource` is `{ Server, Cache }` — presenters use it to drive the offline banner.
 
 `SessionResult` is `record SessionResult(Guid SessionId, DeckId DeckId, IReadOnlyList<CardReview> Reviews)` and `CardReview` is `record CardReview(CardId CardId, ReviewGrade Grade, DateTime ReviewedAt)`.
@@ -170,6 +178,7 @@ Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
 | `IHttpClient` → `UnityWebRequestHttpClient` | Singleton | one long-lived instance |
 | `ServerConfig` | Singleton (instance) | built from `ServerConfigAsset` at scope setup |
 | `IScheduleStore` → `CachingScheduleStore` | Singleton | composite; takes `IScheduleStore` (HTTP) + `IScheduleCache` (file) in constructor |
+| `IPendingDrain` → `CachingScheduleStore` | Singleton | same instance as the `IScheduleStore` alias; offline-queue drain entry point |
 | `IScheduleStore` → `HttpScheduleStore` (named/inner) | Singleton | wraps `IHttpClient`, surfaces `ScheduleStoreUnavailableException` / `ScheduleStoreContractException` |
 | `IScheduleCache` → `JsonFileScheduleCache` | Singleton | offline schedule read-back + pending-upload queue, atomic temp+rename writes |
 | `IAnalyticsService` → `ConsoleAnalyticsService` (dev) / `NoOpAnalyticsService` (release) | Singleton | conditional registration |
@@ -242,7 +251,7 @@ The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/sch
 2. Player starts session. `GetDeckScheduleAsync` falls back to cache (`Source=Cache`).
 3. Session completes. `UploadSessionAsync` throws `ScheduleStoreUnavailableException`; pending session is on disk. Service transitions `Uploading → Error`, publishes `SessionUploadCompletedEvent(Success: false)`.
 4. App closed, reopened later; server now reachable.
-5. `ProjectLifetimeScope` (`IAsyncStartable`) calls `CachingScheduleStore.DrainPendingAsync()` once at startup.
+5. `FoyerPresenter` (`IAsyncStartable`) calls `IPendingDrain.DrainPendingAsync()` once at startup (before refreshing the deck list).
 6. Pending session uploaded → `cache.RemovePending` → fresh `GET /decks/:id/schedule` overwrites cache.
 7. Foyer shows current counts.
 

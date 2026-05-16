@@ -69,7 +69,7 @@ namespace MemoryFoyer.Composition
                 Lifetime.Singleton);
 
             // HttpScheduleStore stays concrete-only so it never satisfies IScheduleStore directly;
-            // CachingScheduleStore owns the alias and stays reachable as a concrete type for DrainPendingAsync.
+            // CachingScheduleStore owns the IScheduleStore alias and the IPendingDrain alias.
             builder.Register<HttpScheduleStore>(Lifetime.Singleton);
             builder.Register<CachingScheduleStore>(resolver =>
                 new CachingScheduleStore(
@@ -78,7 +78,7 @@ namespace MemoryFoyer.Composition
                     analytics: resolver.Resolve<IAnalyticsService>()),
                 Lifetime.Singleton)
                 .As<IScheduleStore>()
-                .AsSelf();
+                .As<IPendingDrain>();
 
             builder.Register<IReviewSessionService, ReviewSessionService>(Lifetime.Singleton);
 
