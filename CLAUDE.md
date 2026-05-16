@@ -56,7 +56,7 @@ ProjectSettings/
 ## Architecture
 
 Layered: Domain → Application → Infrastructure → Presentation, with a Composition root.
-Strict separation enforced via assembly definitions; Domain has `noEngineReferences: true`.
+Strict separation enforced via assembly definitions; Domain and Application both have `noEngineReferences: true`.
 Time lives behind an `IClock` interface — never call `DateTime.UtcNow` from scheduling code. Per-card `Sm2State` is loaded/persisted via `IScheduleStore` (Application interface, HTTP-backed implementation in Infrastructure with a JSON-file cache for offline).
 
 Full detail: see [docs/architecture.md](docs/architecture.md).
@@ -86,7 +86,7 @@ Full detail: see [docs/architecture.md](docs/architecture.md).
 - All registrations live in `Assets/Scripts/Composition/*LifetimeScope.cs`
 
 ## Critical Rules
-- **Domain layer has zero `UnityEngine` references.** The .asmdef enforces this — adding `using UnityEngine;` to any file under `Assets/Scripts/Domain/` will fail to compile.
+- **Domain and Application layers have zero `UnityEngine` references.** The .asmdef (`noEngineReferences: true`) enforces this — adding `using UnityEngine;` to any file under `Assets/Scripts/Domain/` or `Assets/Scripts/Application/` will fail to compile.
 - **Prefer UniTask** for async operations. `System.Threading.Tasks.Task` acceptable in pure-Domain code that doesn't touch Unity. Coroutines acceptable for simple controlled loops.
 - **DO NOT modify** `Assets/Plugins/`, `Assets/Art/Plugins/` or `Assets/TextMesh Pro/`
 - **DO NOT modify** auto-generated input action C# files

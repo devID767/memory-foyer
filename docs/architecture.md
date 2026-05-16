@@ -81,7 +81,9 @@ UniTask<IReadOnlyList<Deck>> GetAllAsync();
 ### `IScheduleStore` (Application)
 
 ```csharp
+UniTask<IReadOnlyList<DeckSummary>> GetDeckSummariesAsync();   // side-effect-free GET /decks (foyer list)
 UniTask<DeckSchedule>  GetDeckScheduleAsync(DeckId deckId);   // primary read; may return stale on offline fallback
+UniTask                EnqueuePendingAsync(SessionResult result); // atomic offline write (temp+rename) before network attempt
 UniTask<DeckSchedule>  UploadSessionAsync(SessionResult result); // returns the full updated schedule (see GDD §8)
 UniTask<bool>          IsServerReachableAsync();             // cheap GET /health, used by offline banner
 ```
@@ -135,6 +137,7 @@ Idle ──StartAsync──▶ Loading ──schedule fetched──▶ Playing
 
 ```csharp
 UniTask<TResponse> GetAsync<TResponse>(string path);
+UniTask<TItem[]>   GetArrayAsync<TItem>(string path);   // bare top-level JSON arrays (e.g. GET /decks)
 UniTask<TResponse> PostAsync<TRequest, TResponse>(string path, TRequest body);
 ```
 
@@ -187,7 +190,9 @@ Registered in `ProjectLifetimeScope.Configure(...)` unless noted:
 | MessagePipe `IPublisher<T>` / `ISubscriber<T>` | Singleton | per the package's defaults |
 | `FoyerPresenter`, `ReviewPresenter` | Scoped (per-scene, in `FoyerLifetimeScope`) | `IAsyncStartable` entry points |
 | `FoyerScreen`, `ReviewScreen` | Scoped | `RegisterComponentInHierarchy<T>()`; aggregate leaf views and own their canvas root via `Show()`/`Hide()` |
-| `DeckSelectionView`, `DeckButtonView[]`, `OfflineBannerView` | Scoped | `OfflineBannerView` registered separately (lives on a persistent canvas) |
+| `OfflineBannerView`, `ErrorBannerView`, `LoadingView` | Scoped | `RegisterComponentInHierarchy<T>()`; banners live on a persistent canvas |
+| `FoyerLayoutConfig`, `ArtPaletteConfig` | Scoped (instance) | loaded via `Resources.Load` at scope setup |
+| `IReadOnlyDictionary<DeckId, Sprite>` | Scoped (instance) | deck icon map built from `DeckAsset[]` at scope setup |
 | `IReviewInputSource` → `InputSystemReviewInputSource` | Scoped | `RegisterComponentInHierarchy<T>().AsImplementedInterfaces()` |
 
 ## CachingScheduleStore — algorithm
@@ -228,7 +233,7 @@ The cache uses temp-file + atomic rename for both `Save` and `AppendPending`. Co
 
 ## New-card budget enforcement
 
-The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/schedule` by selecting at most `NewCardsPerDay` `Stage=New` cards (see [server/README.md known limitations](../server/README.md) for the current per-fetch implementation and Backlog T-1 for the per-UTC-day target). The client trusts that filter and does not re-cap. No Application-side budget value object exists today; if "`{N} new today`" UI copy is added later, the cap can be read from `DeckAsset.NewCardsPerDay` directly.
+The server enforces the per-deck `NewCardsPerDay` cap inside `GET /decks/:id/schedule` by selecting at most `NewCardsPerDay` `Stage=New` cards per UTC day (see [server/README.md new-card release semantics](../server/README.md) for the `released_on` tracking). The client trusts that filter and does not re-cap. No Application-side budget value object exists today; if "`{N} new today`" UI copy is added later, the cap can be read from `DeckAsset.NewCardsPerDay` directly.
 
 ## Data-flow walkthroughs
 

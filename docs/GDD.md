@@ -189,18 +189,22 @@ Decks are `ScriptableObject` assets under `Assets/Resources/Decks/`.
     public string DisplayName;
     public string Description;
     public int    NewCardsPerDay;  // default 10
+    public Sprite? Icon;           // deck card art; null = no icon
     public CardData[] Cards;
 }
 
 [Serializable] class CardData { public string CardId; public string Front; public string Back; }
 ```
 
-**Three seed decks ship in the build:**
+**Six seed decks ship in the build:**
 1. **Capitals of Europe** — 44 cards, `NewCardsPerDay = 10`
-2. **Greek Myths** — 20 cards, `NewCardsPerDay = 5`
-3. **English Idioms** — 30 cards, `NewCardsPerDay = 8`
+2. **English Idioms** — 32 cards, `NewCardsPerDay = 8`
+3. **Movies & Directors** — 25 cards, `NewCardsPerDay = 5`
+4. **Greek Myths** — 20 cards, `NewCardsPerDay = 5`
+5. **Famous Paintings** — 25 cards, `NewCardsPerDay = 5`
+6. **Famous Quotes** — 25 cards, `NewCardsPerDay = 5`
 
-Decks are authored in the **Deck Author** window (`Tools → Memory Foyer → Deck Author`, `Assets/Editor/DeckAuthor/`), a UI Toolkit editor that lists every `DeckAsset`, edits its fields, and validates the collection on Save. Its **Export** button writes the server-side `server/decks.json` snapshot (load → validate → serialize via `DeckExportService` + `DeckJsonSerializer`). CSV import is a Phase 7 stretch task.
+Decks are authored in the **Deck Author** window (`Tools → Memory Foyer → Deck Author`, `Assets/Editor/DeckAuthor/`), a UI Toolkit editor that lists every `DeckAsset`, edits its fields, and validates the collection on Save. Its **Export** button writes the server-side `server/decks.json` snapshot (load → validate → serialize via `DeckExportService` + `DeckJsonSerializer`). CSV import (Phase 7.4) was cut from scope.
 
 ## 8. Backend
 
@@ -246,7 +250,7 @@ All UI strings collected here so tone stays consistent. Tone: terse, calm, no ex
 - Header: `Memory Foyer`
 - Deck button stat (has due cards): `{N} due · {M} total`
 - Deck button stat (caught up): `All caught up`
-- Empty state — all three decks caught up: `All decks caught up. See you tomorrow.`
+- Empty state — all decks caught up (zero due across all decks): `All decks caught up. See you tomorrow.`
 - Offline banner (top of foyer): `Server offline — stats may be stale`
 - Server unreachable on first load: `Couldn't reach server. Click to retry.`
 
@@ -307,12 +311,12 @@ A cross-reference between mechanics in this document and the layer that owns the
 | `ServerConfigAsset` ScriptableObject | Infrastructure | `Infrastructure/ScriptableObjects/ServerConfigAsset.cs` |
 | `DeckAsset` + ScriptableObject deck loading | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` |
 | `DeckAsset` → Domain `Deck` mapping | Infrastructure | `Infrastructure/Repositories/ScriptableObjectDeckRepository.cs` (private mapper, no separate file) |
-| Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerView.cs` |
-| Deck-selection Canvas | Presentation | `Presentation/Foyer/DeckSelectionView.cs` |
+| Foyer scene + Cinemachine vcam | Presentation | `Presentation/Foyer/FoyerPresenter.cs`, `FoyerScreen.cs` |
+| Deck-selection Canvas | Presentation | `Presentation/Foyer/UI/DeckSelectionView.cs` |
 | Review screen UI + DOTween | Presentation | `Presentation/Review/ReviewScreen.cs`, `Presentation/Review/ReviewPresenter.cs` |
-| Offline banner | Presentation | `Presentation/Foyer/OfflineBannerView.cs` |
+| Offline banner | Presentation | `Presentation/Banners/OfflineBannerView.cs` |
 | DI registrations | Composition | `Composition/ProjectLifetimeScope.cs`, `FoyerLifetimeScope.cs` |
-| MessagePipe events on the bus | App → Pres | `DeckSelectedEvent`, `SessionStartedEvent`, `CardReviewedEvent`, `SessionFinishedEvent` |
+| MessagePipe events on the bus | App → Pres | `DeckSelectedEvent`, `SessionStartedEvent`, `CardReviewedEvent`, `SessionReviewedEvent`, `SessionUploadCompletedEvent`, `BackToFoyerRequested` |
 
 **Boundary checks (enforced by `.asmdef`):**
 - `Domain` does not reference `UnityEngine` (asmdef `noEngineReferences: true`).
@@ -358,6 +362,6 @@ This journey is also the **demo video script:** advance the `IClock` between rec
 
 Resolved during planning. Section retained intentionally small to flag what is **not** decided:
 
-1. CSV import format for `DeckAuthorWindow` (Phase 7 stretch — defer).
+1. CSV import format for `DeckAuthorWindow` (Phase 7.4 — cut from scope).
 2. Specific bookshelf/lamp art assets for foyer backdrop (decide during Phase 5 with whatever is on the Unity Asset Store under permissive license).
 3. Demo video shot list (lock during Phase 8).
