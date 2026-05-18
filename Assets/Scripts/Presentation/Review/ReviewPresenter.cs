@@ -28,10 +28,7 @@ namespace MemoryFoyer.Presentation.Review
 
         private const float ErrorAutoReturnSeconds = 2f;
 
-        // Guards re-entry while a card animation (RevealBackAsync / AdvanceToNextCardAsync)
-        // is in flight — prevents spammed input from starting overlapping async chains.
-        private bool _busy;
-        private bool _revealed;
+        private ReviewUiState _state = ReviewUiState.Idle;
         private int _pendingReviewedCount;
         private CancellationToken _lifetimeCt;
 
@@ -85,8 +82,21 @@ namespace MemoryFoyer.Presentation.Review
                 sessionReviewedSub.Dispose();
             });
 
-            // Review screen starts hidden; FoyerPresenter owns the initial canvas state.
             return UniTask.CompletedTask;
+        }
+
+        private static async UniTask<bool> PlayAsync(
+            Func<CancellationToken, UniTask> animation, CancellationToken ct)
+        {
+            try
+            {
+                await animation(ct);
+                return true;
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
         }
 
         private void OnDeckSelected(DeckId deckId)
@@ -96,20 +106,19 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTaskVoid RunOnDeckSelectedAsync(DeckId deckId)
         {
+            if (_state != ReviewUiState.Idle)
+            {
+                return;
+            }
+
             if (_session.State != SessionState.Idle && _session.State != SessionState.Error)
             {
                 return;
             }
 
-            if (_busy)
-            {
-                return;
-            }
-
+            _state = ReviewUiState.Opening;
             CancellationToken ct = _lifetimeCt;
 
-            // Review canvas is gated behind the loading view: _screen.Show is wired as the
-            // on-hidden callback so the canvas only reveals after the session is ready.
             _loadingView.Show(_screen.Show);
 
             try
@@ -120,19 +129,14 @@ namespace MemoryFoyer.Presentation.Review
             }
             catch (OperationCanceledException)
             {
-                return;
-            }
-            catch (DeckNotFoundException ex)
-            {
-                Debug.LogException(ex);
-                _loadingView.Hide(runCallback: false);
-                _backToFoyerPublisher.Publish(new BackToFoyerRequested());
+                _state = ReviewUiState.Idle;
                 return;
             }
             catch (Exception ex)
             {
                 Debug.LogException(ex);
                 _loadingView.Hide(runCallback: false);
+                _state = ReviewUiState.Idle;
                 _backToFoyerPublisher.Publish(new BackToFoyerRequested());
                 return;
             }
@@ -143,20 +147,17 @@ namespace MemoryFoyer.Presentation.Review
             if (_session.State == SessionState.Playing && current is not null)
             {
                 _screen.SetProgress(_session.Position, _session.Total);
-                try
-                {
-                    await _screen.ShowCardAsync(new FrontFaceData(current.Front), ct);
-                    _revealed = false;
-                }
-                catch (OperationCanceledException)
+                var firstFace = new FrontFaceData(current.Front);
+                if (!await PlayAsync(c => _screen.ShowCardAsync(firstFace, c), ct))
                 {
                     return;
                 }
+                _state = ReviewUiState.Front;
             }
             else
             {
-                // Zero cards due — go straight to summary.
                 _screen.ShowSummary(0);
+                _state = ReviewUiState.Summary;
             }
         }
 
@@ -167,31 +168,27 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTaskVoid RunRevealAsync()
         {
-            if (_busy || _revealed || _session.State != SessionState.Playing || _session.CurrentCard is null)
+            if (_state != ReviewUiState.Front)
             {
                 return;
             }
 
-            ReviewCard card = _session.CurrentCard;
-            _session.RevealCurrent();
+            ReviewCard? card = _session.CurrentCard;
+            if (card is null)
+            {
+                return;
+            }
 
+            _session.RevealCurrent();
             CancellationToken ct = _lifetimeCt;
 
-            try
-            {
-                _busy = true;
-                await _screen.RevealBackAsync(new BackFaceData(card.Front, card.Back), ct);
-                _revealed = true;
-            }
-            catch (OperationCanceledException)
+            var backFace = new BackFaceData(card.Front, card.Back);
+            _state = ReviewUiState.Revealing;
+            if (!await PlayAsync(c => _screen.RevealBackAsync(backFace, c), ct))
             {
                 return;
             }
-            finally
-            {
-                _busy = false;
-            }
-
+            _state = ReviewUiState.Back;
             _screen.ShowGrades();
         }
 
@@ -202,7 +199,7 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTaskVoid RunGradeAsync(ReviewGrade grade)
         {
-            if (_busy || !_revealed || _session.State != SessionState.Playing)
+            if (_state != ReviewUiState.Back)
             {
                 return;
             }
@@ -222,6 +219,7 @@ namespace MemoryFoyer.Presentation.Review
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                _state = ReviewUiState.Back;
                 return;
             }
 
@@ -233,48 +231,29 @@ namespace MemoryFoyer.Presentation.Review
                 CardExitDirection exit = grade == ReviewGrade.Again
                     ? CardExitDirection.Down
                     : CardExitDirection.Right;
-                try
-                {
-                    _busy = true;
-                    await _screen.AdvanceToNextCardAsync(new FrontFaceData(next.Front), exit, ct);
-                    _revealed = false;
-                }
-                catch (OperationCanceledException)
+
+                var nextFace = new FrontFaceData(next.Front);
+                _state = ReviewUiState.Advancing;
+                if (!await PlayAsync(c => _screen.AdvanceToNextCardAsync(nextFace, exit, c), ct))
                 {
                     return;
                 }
-                finally
-                {
-                    _busy = false;
-                }
+                _state = ReviewUiState.Front;
             }
             else if (_session.State == SessionState.Reviewed)
             {
-                // Last card graded (cleared — Again re-queues and keeps Playing, so never here):
-                // GradeAsync transitioned to Reviewed and OnSessionReviewed captured the count.
-                // Flick the cleared last card off to the right, then reveal the summary.
-                try
-                {
-                    _busy = true;
-                    await _screen.DismissCardAsync(CardExitDirection.Right, ct);
-                }
-                catch (OperationCanceledException)
+                _state = ReviewUiState.Advancing;
+                if (!await PlayAsync(c => _screen.DismissCardAsync(CardExitDirection.Right, c), ct))
                 {
                     return;
                 }
-                finally
-                {
-                    _busy = false;
-                }
                 _screen.ShowSummary(_pendingReviewedCount);
-                _revealed = false;
+                _state = ReviewUiState.Summary;
             }
         }
 
         private void OnSessionReviewed(SessionReviewedEvent evt)
         {
-            // Published synchronously inside GradeAsync/EndAsync. Only capture the count here;
-            // the async grade/end flow dismisses the card then calls ShowSummary.
             _pendingReviewedCount = evt.ReviewedCount;
         }
 
@@ -285,35 +264,31 @@ namespace MemoryFoyer.Presentation.Review
 
         private async UniTaskVoid RunReturnAsync()
         {
-            if (_busy)
+            switch (_state)
             {
-                return;
-            }
-
-            CancellationToken ct = _lifetimeCt;
-
-            switch (_session.State)
-            {
-                case SessionState.Playing:
-                    await EndCurrentReviewAsync(ct);
+                case ReviewUiState.Front:
+                case ReviewUiState.Back:
+                    await EndCurrentReviewAsync(_lifetimeCt);
                     return;
-                case SessionState.Reviewed:
-                    await CommitAndExitAsync(ct);
-                    return;
-                case SessionState.Idle:
-                case SessionState.Error:
-                    // Zero-cards-due summary (state stayed Idle, no Reviewed transition),
-                    // or user dismissing after a previous Error left the session unrecoverable.
-                    ExitToFoyer();
+                case ReviewUiState.Summary:
+                    if (_session.State == SessionState.Reviewed)
+                    {
+                        await CommitAndExitAsync(_lifetimeCt);
+                    }
+                    else
+                    {
+                        ExitToFoyer();
+                    }
                     return;
                 default:
-                    // Loading / Uploading: ignore (race; should not normally be reachable).
                     return;
             }
         }
 
         private async UniTask EndCurrentReviewAsync(CancellationToken ct)
         {
+            ReviewUiState entry = _state;
+
             try
             {
                 await _session.EndAsync(ct);
@@ -325,38 +300,27 @@ namespace MemoryFoyer.Presentation.Review
             catch (Exception ex)
             {
                 Debug.LogException(ex);
+                _state = entry;
                 return;
             }
 
-            // EndAsync transitioned to Reviewed; OnSessionReviewed captured the count.
-            // Session abandoned via Esc — sink the still-visible card downward (back into the
-            // deck), then reveal the summary. User dismisses to commit.
-            try
-            {
-                _busy = true;
-                await _screen.DismissCardAsync(CardExitDirection.Down, ct);
-            }
-            catch (OperationCanceledException)
+            _state = ReviewUiState.Exiting;
+            if (!await PlayAsync(c => _screen.DismissCardAsync(CardExitDirection.Down, c), ct))
             {
                 return;
             }
-            finally
-            {
-                _busy = false;
-            }
             _screen.ShowSummary(_pendingReviewedCount);
+            _state = ReviewUiState.Summary;
         }
 
         private async UniTask CommitAndExitAsync(CancellationToken ct)
         {
-            // Hide summary and arm the loading cover BEFORE awaiting the upload — without
-            // this, the summary lingers on top of the loading view until POST completes.
             _screen.Hide();
             _loadingView.Show();
 
+            _state = ReviewUiState.Exiting;
             try
             {
-                _busy = true;
                 await _session.CommitAsync(ct);
             }
             catch (OperationCanceledException)
@@ -384,16 +348,13 @@ namespace MemoryFoyer.Presentation.Review
                 ExitToFoyer();
                 return;
             }
-            finally
-            {
-                _busy = false;
-            }
 
             ExitToFoyer();
         }
 
         private void ExitToFoyer()
         {
+            _state = ReviewUiState.Idle;
             _screen.Hide();
             _backToFoyerPublisher.Publish(new BackToFoyerRequested());
         }
