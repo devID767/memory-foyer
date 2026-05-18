@@ -19,14 +19,16 @@ MonoBehaviour:
   _staggerDelay: 0.05
   _enterDuration: 0.22
   _enterEase: 27
-  _enterOffsetY: 30
+  _enterStartScale: 0.85
   _buttonHoverScale: 1.06
   _buttonPressScale: 0.94
   _buttonHoverDuration: 0.1
   _buttonPressDuration: 0.06
   _cardDealDuration: 0.22
   _cardDealEase: 9
-  _cardDealOffsetY: 60
+  _cardDealOffsetY: 300
   _cardDismissDuration: 0.18
   _cardDismissEase: 8
-  _cardDismissOffsetX: 700
+  _cardDismissOffsetX: 1500
+  _cardDismissOffsetY: 1000
+  _cardAdvanceGapDuration: 0.07
