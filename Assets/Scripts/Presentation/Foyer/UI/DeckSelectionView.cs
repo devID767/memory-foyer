@@ -4,7 +4,6 @@ using DG.Tweening;
 using MemoryFoyer.Domain.Models;
 using MemoryFoyer.Presentation.Common;
 using UnityEngine;
-using VContainer;
 
 namespace MemoryFoyer.Presentation.Foyer
 {
@@ -22,7 +21,6 @@ namespace MemoryFoyer.Presentation.Foyer
 
         public event Action<DeckId>? DeckClicked;
 
-        [Inject]
         public void Construct(FoyerLayoutConfig config, ArtPaletteConfig palette, UIAnimationConfig uiConfig, IReadOnlyDictionary<DeckId, Sprite> icons)
         {
             _config = config;

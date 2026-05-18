@@ -5497,7 +5497,6 @@ MonoBehaviour:
   autoInjectGameObjects:
   - {fileID: 2024000790}
   - {fileID: 978592078}
-  - {fileID: 1678218097}
   - {fileID: 2065177470}
 --- !u!4 &1905724613
 Transform:

@@ -20,9 +20,10 @@ namespace MemoryFoyer.Presentation.Foyer
         private CanvasTransition _transition = null!;
 
         [Inject]
-        public void Construct(UIAnimationConfig uiConfig)
+        public void Construct(FoyerLayoutConfig config, ArtPaletteConfig palette, UIAnimationConfig uiConfig, IReadOnlyDictionary<DeckId, Sprite> icons)
         {
             _transition = new CanvasTransition(_canvasGroup, _canvasRect, uiConfig);
+            _deckSelection.Construct(config, palette, uiConfig, icons);
         }
 
         private void Awake()
