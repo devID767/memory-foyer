@@ -145,6 +145,21 @@ namespace MemoryFoyer.Tests.EditMode.Application.Sessions
         }
 
         [Test]
+        public void SessionReviewedEvent_CountsDistinctCards_NotAgainRepeats()
+        {
+            Fixture f = Build(cardCount: 2);
+            f.Service.StartAsync(Deck).GetAwaiter().GetResult();
+
+            // c1 graded Again is re-queued; clearing it later must not double-count it.
+            f.Service.GradeAsync(ReviewGrade.Again).GetAwaiter().GetResult();
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+            f.Service.GradeAsync(ReviewGrade.Good).GetAwaiter().GetResult();
+
+            Assert.That(f.Service.State, Is.EqualTo(SessionState.Reviewed));
+            Assert.That(f.SessionReviewed.Published[0].ReviewedCount, Is.EqualTo(2));
+        }
+
+        [Test]
         public void EndAsync_FromPlaying_TransitionsToReviewed_AndEnqueuesPending_NoUpload()
         {
             Fixture f = Build(cardCount: 3);

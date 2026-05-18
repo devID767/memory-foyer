@@ -190,7 +190,7 @@ namespace MemoryFoyer.Application.Sessions
             SessionResult result = _pendingResult;
             Guid sessionId = result.SessionId;
             DeckId deckId = result.DeckId;
-            int reviewedCount = result.Reviews.Count;
+            int reviewedCount = DistinctReviewedCount(result.Reviews);
             DateTime startedAt = _startedAt;
 
             _state = SessionState.Uploading;
@@ -242,7 +242,13 @@ namespace MemoryFoyer.Application.Sessions
             }
 
             _state = SessionState.Reviewed;
-            _sessionReviewedPublisher.Publish(new SessionReviewedEvent(_sessionId, _deckId, _reviews.Count));
+            _sessionReviewedPublisher.Publish(
+                new SessionReviewedEvent(_sessionId, _deckId, DistinctReviewedCount(_reviews)));
+        }
+
+        private static int DistinctReviewedCount(IReadOnlyList<CardReview> reviews)
+        {
+            return reviews.Select(review => review.CardId).Distinct().Count();
         }
 
         private sealed record QueueEntry(CardId CardId, string Front, string Back, Sm2State State);
