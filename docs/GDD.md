@@ -177,6 +177,7 @@ Single Canvas (Screen Space – Overlay render mode), aggregated as `ReviewScree
 - Bottom: four buttons — Again / Hard / Good / Easy — also bound to keys 1–4.
 - Esc closes the session.
 - Foyer canvas is deactivated for the duration of the session — no behind-scene dimming required.
+- Motion (DOTween, tuned via `UIAnimationConfig`): the foyer↔review canvas swap cross-fades (no instant snap); after reveal, grading advances as dismiss → brief beat → next card deals up — cleared grades (Hard/Good/Easy) flick the card off to the right, Again sinks it downward (back into the deck); at session end (queue empty or Esc) the current card is dismissed before the summary fades in. Grade buttons (and foyer deck cards) have hover/press feedback; card lists stagger in.
 
 ## 7. Content — Decks
 

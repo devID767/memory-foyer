@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using MemoryFoyer.Domain.Models;
 using MemoryFoyer.Infrastructure.ScriptableObjects;
 using MemoryFoyer.Presentation.Banners;
+using MemoryFoyer.Presentation.Common;
 using MemoryFoyer.Presentation.Foyer;
 using MemoryFoyer.Presentation.Review;
 using UnityEngine;
@@ -14,12 +15,14 @@ namespace MemoryFoyer.Composition
     {
         private const string LayoutConfigResourcePath = "Config/FoyerLayoutConfig";
         private const string PaletteConfigResourcePath = "Config/ArtPaletteConfig";
+        private const string UIAnimConfigResourcePath = "Config/UIAnimationConfig";
         private const string DecksResourceFolder = "Decks";
 
         protected override void Configure(IContainerBuilder builder)
         {
             builder.RegisterInstance(LoadLayoutConfig());
             builder.RegisterInstance(LoadPaletteConfig());
+            builder.RegisterInstance(LoadUIAnimationConfig());
             builder.RegisterInstance<IReadOnlyDictionary<DeckId, Sprite>>(BuildIconDictionary());
 
             builder.RegisterComponentInHierarchy<FoyerScreen>();
@@ -51,6 +54,17 @@ namespace MemoryFoyer.Composition
             {
                 throw new MissingReferenceException(
                     $"ArtPaletteConfig not found at Resources/{PaletteConfigResourcePath}.asset");
+            }
+            return config;
+        }
+
+        private static UIAnimationConfig LoadUIAnimationConfig()
+        {
+            UIAnimationConfig? config = Resources.Load<UIAnimationConfig>(UIAnimConfigResourcePath);
+            if (config == null)
+            {
+                throw new MissingReferenceException(
+                    $"UIAnimationConfig not found at Resources/{UIAnimConfigResourcePath}.asset");
             }
             return config;
         }

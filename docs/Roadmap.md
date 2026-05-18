@@ -143,6 +143,6 @@ Tag: `v1.0`.
 
 ## Phase 10: Polish _(stretch)_
 
-- [ ] **10.1** DOTween animations (card flip, deck-button press feedback)
+- [x] **10.1** DOTween animations — completed 2026-05-17: card flip & deck-button press pre-existed; this pass added the broader motion layer (reusable `UIButtonFeedback` on grade/return buttons, `CanvasTransition` screen fade-in for Foyer/Review/Summary, staggered deck-card & grade-button entrances, review card dismiss+deal replacing the overloaded flip-as-advance). Subsumes Backlog I-1.
 - [ ] **10.2** Graphy in development builds only
 - [ ] **10.3** HDRI skybox from Polyhaven

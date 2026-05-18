@@ -379,14 +379,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2125229834}
   m_SourcePrefab: {fileID: 100100000, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
 --- !u!114 &15352359 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2625687848067125433, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
   m_PrefabInstance: {fileID: 15352358}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 2125229832}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -529,6 +532,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 38782596}
   m_CullTransparentMesh: 1
+--- !u!1 &61968553 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+  m_PrefabInstance: {fileID: 7670626353779845527}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &210931317
 GameObject:
   m_ObjectHideFlags: 0
@@ -2128,6 +2136,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 2326288920935809774, guid: 42483f76214c84ce282c8160702de673, type: 3}
       insertIndex: -1
       addedObject: {fileID: 567013636}
+    - targetCorrespondingSourceObject: {fileID: 2326288920935809774, guid: 42483f76214c84ce282c8160702de673, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 567013639}
   m_SourcePrefab: {fileID: 100100000, guid: 42483f76214c84ce282c8160702de673, type: 3}
 --- !u!224 &567013634 stripped
 RectTransform:
@@ -2153,6 +2164,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Review.SummaryView
   _reviewedLabel: {fileID: 1495006725}
   _returnButton: {fileID: 1265978118}
+  _returnFeedback: {fileID: 1265978122}
+  _canvasGroup: {fileID: 567013639}
+--- !u!225 &567013639
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 567013635}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &574393111
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2363,6 +2388,7 @@ MonoBehaviour:
   _backFace: {fileID: 346689589}
   _cardTapButton: {fileID: 574393115}
   _animationConfig: {fileID: 11400000, guid: 68f397b3da0c94848b7afe3a4061c00b, type: 2}
+  _uiAnimationConfig: {fileID: 11400000, guid: c6815dbdd3da0458c8a32d97e77c74cc, type: 2}
 --- !u!1 &601993308
 GameObject:
   m_ObjectHideFlags: 0
@@ -2906,6 +2932,7 @@ GameObject:
   - component: {fileID: 953716355}
   - component: {fileID: 953716354}
   - component: {fileID: 953716357}
+  - component: {fileID: 953716358}
   m_Layer: 0
   m_Name: FoyerScreen
   m_TagString: Untagged
@@ -3013,7 +3040,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Foyer.FoyerScreen
   _canvasRoot: {fileID: 953716352}
+  _canvasGroup: {fileID: 953716358}
+  _canvasRect: {fileID: 953716353}
   _deckSelection: {fileID: 1678218099}
+--- !u!225 &953716358
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 953716352}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &962164283
 GameObject:
   m_ObjectHideFlags: 0
@@ -3533,14 +3574,17 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1859846553}
   m_SourcePrefab: {fileID: 100100000, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
 --- !u!114 &1076920893 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2625687848067125433, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
   m_PrefabInstance: {fileID: 1076920892}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1859846551}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
@@ -3634,6 +3678,7 @@ GameObject:
   - component: {fileID: 1265978119}
   - component: {fileID: 1265978118}
   - component: {fileID: 1265978121}
+  - component: {fileID: 1265978122}
   m_Layer: 0
   m_Name: Button
   m_TagString: Untagged
@@ -3761,6 +3806,18 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 3, y: -4}
   m_UseGraphicAlpha: 1
+--- !u!114 &1265978122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1265978116}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2ec96324a67421a81de945fa622384, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Common.UIButtonFeedback
 --- !u!1 &1380558236
 GameObject:
   m_ObjectHideFlags: 0
@@ -4752,6 +4809,11 @@ MonoBehaviour:
   _hardButton: {fileID: 1776896316}
   _goodButton: {fileID: 1076920893}
   _easyButton: {fileID: 15352359}
+  _buttonFeedback:
+  - {fileID: 7670626353779845530}
+  - {fileID: 2004734346}
+  - {fileID: 1859846553}
+  - {fileID: 2125229834}
 --- !u!1 &1656848567
 GameObject:
   m_ObjectHideFlags: 0
@@ -5159,6 +5221,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Review.ReviewScreen
   _canvasRoot: {fileID: 1701890799}
+  _canvasGroup: {fileID: 1701890805}
+  _canvasRect: {fileID: 1701890800}
   _card: {fileID: 574393116}
   _grades: {fileID: 1634835257}
   _summary: {fileID: 567013636}
@@ -5274,19 +5338,39 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2004734346}
   m_SourcePrefab: {fileID: 100100000, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
 --- !u!114 &1776896316 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2625687848067125433, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
   m_PrefabInstance: {fileID: 1776896315}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 2004734344}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+--- !u!1 &1859846551 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+  m_PrefabInstance: {fileID: 1076920892}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1859846553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1859846551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2ec96324a67421a81de945fa622384, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Common.UIButtonFeedback
 --- !u!1 &1895589915
 GameObject:
   m_ObjectHideFlags: 0
@@ -5634,6 +5718,23 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1999288899}
   m_CullTransparentMesh: 1
+--- !u!1 &2004734344 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+  m_PrefabInstance: {fileID: 1776896315}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2004734346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2004734344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2ec96324a67421a81de945fa622384, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Common.UIButtonFeedback
 --- !u!1 &2024000790
 GameObject:
   m_ObjectHideFlags: 0
@@ -5878,6 +5979,23 @@ MonoBehaviour:
   _showDelaySeconds: 0.05
   _dotIntervalSeconds: 0.35
   _maxDots: 3
+--- !u!1 &2125229832 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+  m_PrefabInstance: {fileID: 15352358}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2125229834
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2125229832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2ec96324a67421a81de945fa622384, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Common.UIButtonFeedback
 --- !u!21 &2139623702
 Material:
   serializedVersion: 8
@@ -6451,19 +6569,34 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3602446084254526746, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7670626353779845530}
   m_SourcePrefab: {fileID: 100100000, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
 --- !u!114 &7670626353779845528 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2625687848067125433, guid: 85b1d6c3b19d24f5db5f2df7528b7ca2, type: 3}
   m_PrefabInstance: {fileID: 7670626353779845527}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 61968553}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+--- !u!114 &7670626353779845530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 61968553}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed2ec96324a67421a81de945fa622384, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MemoryFoyer.Presentation::MemoryFoyer.Presentation.Common.UIButtonFeedback
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

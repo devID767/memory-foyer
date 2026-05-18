@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using MemoryFoyer.Presentation.Common;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,12 +23,14 @@ namespace MemoryFoyer.Presentation.Review
         [SerializeField] private BackFaceView _backFace = null!;
         [SerializeField] private Button _cardTapButton = null!;
         [SerializeField] private ReviewAnimationConfig _animationConfig = null!;
+        [SerializeField] private UIAnimationConfig _uiAnimationConfig = null!;
 
         public event Action? RevealRequested;
 
         private ReviewViewState _state = ReviewViewState.Hidden;
         private Tween? _activeTween;
         private CardFlipAnimator _flipAnimator = null!;
+        private CardDealAnimator _dealAnimator = null!;
         private RectTransform _rectTransform = null!;
         private CancellationTokenSource _lifetimeCts = null!;
 
@@ -36,6 +39,7 @@ namespace MemoryFoyer.Presentation.Review
             _lifetimeCts = new CancellationTokenSource();
             _rectTransform = (RectTransform)transform;
             _flipAnimator = new CardFlipAnimator(_rectTransform, _animationConfig);
+            _dealAnimator = new CardDealAnimator(_rectTransform, _uiAnimationConfig);
             _cardTapButton.onClick.AddListener(OnCardTapped);
         }
 
@@ -56,6 +60,10 @@ namespace MemoryFoyer.Presentation.Review
             if (_animationConfig == null)
             {
                 Debug.LogError($"[ReviewView] '{name}': _animationConfig is not assigned", this);
+            }
+            if (_uiAnimationConfig == null)
+            {
+                Debug.LogError($"[ReviewView] '{name}': _uiAnimationConfig is not assigned", this);
             }
         }
 
@@ -141,7 +149,7 @@ namespace MemoryFoyer.Presentation.Review
             SetState(ReviewViewState.Revealed);
         }
 
-        public async UniTask AdvanceToNextCardAsync(FrontFaceData data, CancellationToken ct)
+        public async UniTask AdvanceToNextCardAsync(FrontFaceData data, CardExitDirection exit, CancellationToken ct)
         {
             if (!TryStartAnimation(ReviewViewState.Revealed, out ReviewViewState rollback))
             {
@@ -151,15 +159,15 @@ namespace MemoryFoyer.Presentation.Review
             using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetimeCts.Token);
             CancellationToken linkedCt = linked.Token;
 
-            Sequence seq = _flipAnimator.BuildFlip(onPivot: () =>
+            Sequence seq = _dealAnimator.BuildAdvance(onPivot: () =>
             {
                 _backFace.SetVisible(false);
                 _frontFace.Bind(data);
                 _frontFace.SetVisible(true);
-            });
+            }, exit);
             await RunTrackedAsync(seq, linkedCt, onCancel: () =>
             {
-                _flipAnimator.ResetScale();
+                _dealAnimator.ResetTransform();
                 _frontFace.SetVisible(false);
                 _backFace.SetVisible(true);
                 SetState(rollback);
@@ -168,6 +176,51 @@ namespace MemoryFoyer.Presentation.Review
             linkedCt.ThrowIfCancellationRequested();
 
             SetState(ReviewViewState.FaceDown);
+        }
+
+        public async UniTask DismissAsync(CardExitDirection exit, CancellationToken ct)
+        {
+            if (_state == ReviewViewState.Hidden)
+            {
+                return;
+            }
+            if (!TryStartDismiss(out ReviewViewState rollback))
+            {
+                return;
+            }
+
+            using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _lifetimeCts.Token);
+            CancellationToken linkedCt = linked.Token;
+
+            Sequence seq = _dealAnimator.BuildDismiss(exit);
+            await RunTrackedAsync(seq, linkedCt, onCancel: () =>
+            {
+                _dealAnimator.ResetTransform();
+                _frontFace.SetVisible(rollback == ReviewViewState.FaceDown);
+                _backFace.SetVisible(rollback == ReviewViewState.Revealed);
+                SetState(rollback);
+            });
+
+            linkedCt.ThrowIfCancellationRequested();
+
+            _frontFace.SetVisible(false);
+            _backFace.SetVisible(false);
+            _dealAnimator.ResetTransform();
+            SetState(ReviewViewState.Hidden);
+            gameObject.SetActive(false);
+        }
+
+        private bool TryStartDismiss(out ReviewViewState rollback)
+        {
+            if (_state != ReviewViewState.Revealed && _state != ReviewViewState.FaceDown)
+            {
+                Debug.LogWarning($"[ReviewView] illegal transition {_state}→Animating (expected Revealed or FaceDown)");
+                rollback = _state;
+                return false;
+            }
+            rollback = _state;
+            SetState(ReviewViewState.Animating);
+            return true;
         }
 
         private bool TryStartAnimation(ReviewViewState expected, out ReviewViewState rollback)

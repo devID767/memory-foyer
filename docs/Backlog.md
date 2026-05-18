@@ -15,7 +15,7 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 ## Ideas
 <!-- next ID: I-2 -->
 
-- [ ] **I-1** (2026-05-12) Visual canvas transition between Foyer and Review screens — currently the canvas swap (FoyerScreen.Hide() / ReviewScreen.Show() and reverse) is instantaneous SetActive flip. A fade or slide transition would improve perceived polish. Roadmap Phase 10 polish — no urgency.
+_None._
 
 ## Archive
 
@@ -29,3 +29,4 @@ ID convention: `B-N` for bugs, `T-N` for todos, `I-N` for ideas. Counter is mono
 - [x] **T-7** (2026-05-12 → 2026-05-14) Loading-state UX gap on session start — between ReviewPresenter calling _screen.Show() and _session.StartAsync completing, the review canvas is visible with deck name but empty card area (network round-trip to fetch schedule). Add a loading indicator or defer Show() until first card is ready. Source: Assets/Scripts/Presentation/Review/ReviewPresenter.cs RunOnDeckSelectedAsync.
 - [x] **T-9** (2026-05-13 → 2026-05-15) fix: polish "All caught up" empty-state card visuals — currently the card layout looks broken (title/icon/counter areas left blank with only the bottom label visible). Needs a proper empty-state design instead of just hiding everything.
 - [x] **T-6** (2026-05-12 → 2026-05-15) Progress label may exceed Total on ReviewGrade.Again — numerator (_session.ReviewsCompleted + 1) can exceed denominator (_session.Total, initial queue size) when user grades Again repeatedly because the same card re-enters the queue. Fixed by switching to cleared-based progress: Position = Total − Remaining + 1, bounded to [1, Total]. replaced ReviewsCompleted with Position property on IReviewSessionService; added unit tests.
+- [x] **I-1** (2026-05-12 → 2026-05-17) Visual canvas transition between Foyer and Review screens — instantaneous SetActive flip replaced with a `CanvasTransition` fade-in (alpha + scale from authored rest). Delivered as part of Roadmap 10.1 motion pass.

@@ -2,7 +2,9 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using MemoryFoyer.Domain.Scheduling;
+using MemoryFoyer.Presentation.Common;
 using UnityEngine;
+using VContainer;
 
 namespace MemoryFoyer.Presentation.Review
 {
@@ -19,6 +21,8 @@ namespace MemoryFoyer.Presentation.Review
     public sealed class ReviewScreen : MonoBehaviour
     {
         [SerializeField] private GameObject _canvasRoot = null!; // set in Inspector
+        [SerializeField] private CanvasGroup _canvasGroup = null!; // set in Inspector — on _canvasRoot
+        [SerializeField] private RectTransform _canvasRect = null!; // set in Inspector — on _canvasRoot
         [SerializeField] private ReviewCardView _card = null!; // set in Inspector
         [SerializeField] private GradeButtonsView _grades = null!; // set in Inspector
         [SerializeField] private SummaryView _summary = null!; // set in Inspector
@@ -27,6 +31,16 @@ namespace MemoryFoyer.Presentation.Review
         public event Action? RevealRequested;
         public event Action<ReviewGrade>? GradeSubmitted;
         public event Action? ReturnRequested;
+
+        private CanvasTransition _transition = null!;
+
+        [Inject]
+        public void Construct(UIAnimationConfig uiConfig)
+        {
+            _transition = new CanvasTransition(_canvasGroup, _canvasRect, uiConfig);
+            _grades.Configure(uiConfig);
+            _summary.Configure(uiConfig);
+        }
 
         private void Awake()
         {
@@ -48,11 +62,12 @@ namespace MemoryFoyer.Presentation.Review
             // baseline — documented exception to the forwarder rule (see class summary).
             _summary.Hide();
             _grades.Hide();
-            _canvasRoot.SetActive(true);
+            _transition.FadeInAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         public void Hide()
         {
+            _transition.Kill();
             _canvasRoot.SetActive(false);
         }
 
@@ -79,14 +94,19 @@ namespace MemoryFoyer.Presentation.Review
             return _card.RevealBackAsync(back, ct);
         }
 
-        public UniTask AdvanceToNextCardAsync(FrontFaceData next, CancellationToken ct)
+        public UniTask AdvanceToNextCardAsync(FrontFaceData next, CardExitDirection exit, CancellationToken ct)
         {
-            return _card.AdvanceToNextCardAsync(next, ct);
+            return _card.AdvanceToNextCardAsync(next, exit, ct);
         }
 
         public UniTask HideCardAsync(CancellationToken ct)
         {
             return _card.HideAsync(ct);
+        }
+
+        public UniTask DismissCardAsync(CardExitDirection exit, CancellationToken ct)
+        {
+            return _card.DismissAsync(exit, ct);
         }
 
         public void ShowGrades()

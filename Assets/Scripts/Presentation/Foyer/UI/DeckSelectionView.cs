@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using MemoryFoyer.Domain.Models;
+using MemoryFoyer.Presentation.Common;
 using UnityEngine;
 using VContainer;
 
@@ -12,22 +14,26 @@ namespace MemoryFoyer.Presentation.Foyer
 
         private FoyerLayoutConfig _config = null!;
         private ArtPaletteConfig _palette = null!;
+        private UIAnimationConfig _uiConfig = null!;
         private IReadOnlyDictionary<DeckId, Sprite> _icons = null!;
 
         private readonly List<DeckCardView> _cards = new();
+        private Tween? _entranceTween;
 
         public event Action<DeckId>? DeckClicked;
 
         [Inject]
-        public void Construct(FoyerLayoutConfig config, ArtPaletteConfig palette, IReadOnlyDictionary<DeckId, Sprite> icons)
+        public void Construct(FoyerLayoutConfig config, ArtPaletteConfig palette, UIAnimationConfig uiConfig, IReadOnlyDictionary<DeckId, Sprite> icons)
         {
             _config = config;
             _palette = palette;
+            _uiConfig = uiConfig;
             _icons = icons;
         }
 
         private void OnDestroy()
         {
+            _entranceTween?.Kill();
             foreach (DeckCardView card in _cards)
             {
                 card.Clicked -= OnChildClicked;
@@ -37,11 +43,15 @@ namespace MemoryFoyer.Presentation.Foyer
 
         public void Bind(IReadOnlyList<DeckButtonModel> models)
         {
+            _entranceTween?.Kill();
+
             int count = Math.Min(models.Count, _config.MaxDecksToShow);
             EnsureCardCount(count);
 
             float totalWidth = ComputeTotalWidth(count);
             float cursorX = -totalWidth * 0.5f;
+
+            List<RectTransform> entering = new(count);
 
             for (int i = 0; i < _cards.Count; i++)
             {
@@ -65,8 +75,14 @@ namespace MemoryFoyer.Presentation.Foyer
 
                 card.Bind(model, icon);
                 card.ApplyLayout(new Vector2(x, y), tilt, pin);
+                entering.Add((RectTransform)card.transform);
 
                 cursorX += width + _config.Spacing;
+            }
+
+            if (entering.Count > 0)
+            {
+                _entranceTween = new StaggeredFadeInAnimator(entering, _uiConfig).BuildEntrance().Play();
             }
         }
 

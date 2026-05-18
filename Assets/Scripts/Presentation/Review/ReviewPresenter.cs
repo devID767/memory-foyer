@@ -32,6 +32,7 @@ namespace MemoryFoyer.Presentation.Review
         // is in flight — prevents spammed input from starting overlapping async chains.
         private bool _busy;
         private bool _revealed;
+        private int _pendingReviewedCount;
         private CancellationToken _lifetimeCt;
 
         public ReviewPresenter(
@@ -229,10 +230,13 @@ namespace MemoryFoyer.Presentation.Review
             {
                 _screen.SetProgress(_session.Position, _session.Total);
 
+                CardExitDirection exit = grade == ReviewGrade.Again
+                    ? CardExitDirection.Down
+                    : CardExitDirection.Right;
                 try
                 {
                     _busy = true;
-                    await _screen.AdvanceToNextCardAsync(new FrontFaceData(next.Front), ct);
+                    await _screen.AdvanceToNextCardAsync(new FrontFaceData(next.Front), exit, ct);
                     _revealed = false;
                 }
                 catch (OperationCanceledException)
@@ -244,13 +248,34 @@ namespace MemoryFoyer.Presentation.Review
                     _busy = false;
                 }
             }
-            // If session is no longer Playing, GradeAsync transitioned to Reviewed and published
-            // SessionReviewedEvent synchronously; OnSessionReviewed already called ShowSummary.
+            else if (_session.State == SessionState.Reviewed)
+            {
+                // Last card graded (cleared — Again re-queues and keeps Playing, so never here):
+                // GradeAsync transitioned to Reviewed and OnSessionReviewed captured the count.
+                // Flick the cleared last card off to the right, then reveal the summary.
+                try
+                {
+                    _busy = true;
+                    await _screen.DismissCardAsync(CardExitDirection.Right, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                finally
+                {
+                    _busy = false;
+                }
+                _screen.ShowSummary(_pendingReviewedCount);
+                _revealed = false;
+            }
         }
 
         private void OnSessionReviewed(SessionReviewedEvent evt)
         {
-            _screen.ShowSummary(evt.ReviewedCount);
+            // Published synchronously inside GradeAsync/EndAsync. Only capture the count here;
+            // the async grade/end flow dismisses the card then calls ShowSummary.
+            _pendingReviewedCount = evt.ReviewedCount;
         }
 
         private void OnReturnRequested()
@@ -302,8 +327,24 @@ namespace MemoryFoyer.Presentation.Review
                 Debug.LogException(ex);
                 return;
             }
-            // EndAsync transitioned to Reviewed and published SessionReviewedEvent;
-            // OnSessionReviewed showed the Summary. User dismisses to commit.
+
+            // EndAsync transitioned to Reviewed; OnSessionReviewed captured the count.
+            // Session abandoned via Esc — sink the still-visible card downward (back into the
+            // deck), then reveal the summary. User dismisses to commit.
+            try
+            {
+                _busy = true;
+                await _screen.DismissCardAsync(CardExitDirection.Down, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            finally
+            {
+                _busy = false;
+            }
+            _screen.ShowSummary(_pendingReviewedCount);
         }
 
         private async UniTask CommitAndExitAsync(CancellationToken ct)
