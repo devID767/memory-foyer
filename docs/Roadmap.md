@@ -130,7 +130,7 @@ The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into
 
 - [x] **8.1** Capture `docs/demo.gif` (full cycle: foyer → review → summary) _(2026-05-19)_
 - [x] **8.2** Architecture mermaid diagram in `docs/architecture.md`
-- [ ] **8.3** Full README with highlights, trade-offs, what's next
+- [x] **8.3** Full README with highlights, trade-offs, what's next _(2026-05-19)_
 - [ ] **8.4** Repo settings (description, topics, pin)
 
 Tag: `v1.0`.
@@ -144,5 +144,3 @@ Tag: `v1.0`.
 ## Phase 10: Polish _(stretch)_
 
 - [x] **10.1** DOTween animations — completed 2026-05-17: card flip & deck-button press pre-existed; this pass added the broader motion layer (reusable `UIButtonFeedback` on grade/return buttons, `CanvasTransition` screen fade-in for Foyer/Review/Summary, staggered deck-card & grade-button entrances, review card dismiss+deal replacing the overloaded flip-as-advance). Subsumes Backlog I-1.
-- [ ] **10.2** Graphy in development builds only
-- [ ] **10.3** HDRI skybox from Polyhaven
