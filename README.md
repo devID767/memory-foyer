@@ -10,7 +10,9 @@ _Filled in during Phase 8 (README, GIFs, polish)._
 
 ## Demo
 
-_GIF and screenshots land in Phase 8._
+![Memory Foyer demo](docs/demo.gif)
+
+One full cycle: pick a deck in the foyer → grade cards in review → session summary.
 
 ## Tech stack
 

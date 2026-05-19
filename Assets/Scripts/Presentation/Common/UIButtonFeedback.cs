@@ -76,6 +76,12 @@ namespace MemoryFoyer.Presentation.Common
                 .Play();
         }
 
+        private void OnDisable()
+        {
+            _activeTween?.Kill();
+            _rectTransform.localScale = _restScale;
+        }
+
         private void OnDestroy()
         {
             _activeTween?.Kill();
