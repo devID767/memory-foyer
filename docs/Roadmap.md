@@ -131,7 +131,7 @@ The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into
 - [x] **8.1** Capture `docs/demo.gif` (full cycle: foyer → review → summary) _(2026-05-19)_
 - [x] **8.2** Architecture mermaid diagram in `docs/architecture.md`
 - [x] **8.3** Full README with highlights, trade-offs, what's next _(2026-05-19)_
-- [ ] **8.4** Repo settings (description, topics, pin)
+- [x] **8.4** Repo settings (description, topics, pin) _(2026-05-19)_
 
 Tag: `v1.0`.
 
