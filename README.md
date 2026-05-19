@@ -6,7 +6,7 @@ A spaced-repetition trainer (SM-2) with a minimal 3D foyer for deck selection. A
 
 ## Why this project
 
-The flashcard domain here is deliberately small. It is a controlled vehicle to demonstrate two things rather than a claim that a single-user trainer needs this stack: (1) a strict layered architecture where the SM-2 algorithm and session orchestration compile and unit-test as pure C# behind compile-enforced assembly boundaries, and (2) a real client–server contract backed by an authoritative server. The Node + SQLite backend exists to fill the backend gap a Unity-only portfolio leaves open — server-side scheduling, idempotent session submission, and an explicit API contract — not because a local trainer requires a server.
+The flashcard domain here is deliberately small. It is a controlled vehicle to demonstrate two things: (1) a strict layered architecture where the SM-2 algorithm and session orchestration compile and unit-test as pure C# behind compile-enforced assembly boundaries, and (2) a real client–server contract backed by an authoritative server. The Node + SQLite backend exists to fill the backend gap a Unity-only portfolio leaves open — server-side scheduling, idempotent session submission, and an explicit API contract.
 
 ## Demo
 
@@ -17,10 +17,10 @@ One full cycle: pick a deck in the foyer → grade cards in review → session s
 ## Highlights
 
 - **Strict layered architecture** — five assembly-enforced layers. `Domain` and `Application` are compiled with `noEngineReferences: true`, so the SM-2 algorithm and session orchestration build and unit-test without `UnityEngine`. See [docs/architecture.md](docs/architecture.md).
-- **Server-authoritative SM-2** — the algorithm is duplicated as pure C# (`Assets/Scripts/Domain/Scheduling/Sm2Algorithm.cs`) and server JS (`server/sm2.js`), each with its own test suite, under a documented no-divergence contract. The server result is the source of truth and overwrites the client cache after every submission. See [docs/GDD.md](docs/GDD.md) §4.
+- **Server-authoritative SM-2** — the algorithm is duplicated as pure C# (`Assets/Scripts/Domain/Scheduling/Sm2Algorithm.cs`) and server JS (`server/sm2.js`), each with its own test suite. The server result is the source of truth and overwrites the client cache after every submission. See [docs/GDD.md](docs/GDD.md) §4.
 - **Tested across every layer** — 12 EditMode suites covering Domain, Application, Infrastructure, and Editor, plus a backend SM-2 suite and an HTTP integration suite.
 - **Idempotent authoritative backend** — Express + SQLite, five endpoints, `zod` request validation, and submission de-duplication keyed on `sessionId` + `payload_hash`. See [server/README.md](server/README.md).
-- **Offline-degraded by design** — `CachingScheduleStore` runs HTTP as primary with an atomic JSON cache fallback. On reconnect it drains queued sessions FIFO, then overwrites the cache from the server. See [docs/architecture.md](docs/architecture.md).
+- **Offline-degraded fallback** — `CachingScheduleStore` runs HTTP as primary with an atomic JSON cache fallback. On reconnect it drains queued sessions FIFO, then overwrites the cache from the server. See [docs/architecture.md](docs/architecture.md).
 - **UI Toolkit Deck Author** — an in-editor authoring window (`Tools → Memory Foyer → Deck Author`) with an atomic Export to `server/decks.json`, keeping deck content a single diffable source of truth.
 
 ## Tech stack
@@ -101,7 +101,7 @@ Full reference (contracts, DI lifetimes, `CachingScheduleStore` algorithm): [doc
 
 Deliberate trade-offs, each made to keep the portfolio scope honest:
 
-- **Local-only authoritative server; multi-device is last-write-wins.** Single-device by design — this keeps the backend a real contract demonstration without dragging cloud hosting and auth into scope.
+- **Local-only authoritative server; multi-device is last-write-wins.** Single-device by design — cloud hosting and auth are intentionally out of scope.
 - **Offline is degraded, not full.** A populated cache lets a session start and queue uploads, but a long offline stretch lets cached `dueAt` values drift. Acceptable for a single-user tool.
 - **A mid-session hard crash before flush can drop the in-flight session.** A normal app close survives via the on-disk pending queue; a write-ahead log is the production answer and is out of scope here.
 - **Layered, not Clean/Onion verbatim.** Deliberately the minimum split that makes SM-2 testable in pure C# — no separate Use-Cases assembly, no DTOs in Application.

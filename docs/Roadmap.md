@@ -126,7 +126,7 @@ The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into
 - [x] **7.4** ~~CSV import button~~ — cut 2026-05-16, stretch goal not pursued _(stretch → cut)_
 - [x] **7.5** Export button — `DeckExportService` + `DeckJsonSerializer` (folds in 3.5.12 `DeckExporter`; standalone menu item removed) _(2026-05-16)_
 
-## Phase 8: README, GIFs, polish [CURRENT]
+## Phase 8: README, GIFs, polish
 
 - [x] **8.1** Capture `docs/demo.gif` (full cycle: foyer → review → summary) _(2026-05-19)_
 - [x] **8.2** Architecture mermaid diagram in `docs/architecture.md`
@@ -135,7 +135,7 @@ The deck → server sync path (originally `DeckExporter`, 3.5.12) is folded into
 
 Tag: `v1.0`.
 
-## Phase 9: GitHub Actions CI _(stretch)_
+## Phase 9: GitHub Actions CI _(stretch)_ [CURRENT]
 
 - [ ] **9.1** `.github/workflows/tests.yml` with `game-ci/unity-test-runner`
 - [ ] **9.2** Unity license activation flow
